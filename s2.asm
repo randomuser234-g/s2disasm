@@ -39867,10 +39867,9 @@ Tails_ChgJumpDir:
 	bge.s	+
 
 .demo2:
-	move.w	d6,d0	; limit speed in air going right, even if Tails was already going faster (speed limit/cap)
+	move.w	d6,d0	; limit speed in air going right, even if Sonic was already going faster (speed limit/cap)
 ; Obj02_JumpMove:
 +	move.w	d0,x_vel(a0)
-
 ; loc_1C518: Obj02_ResetScr2:
 Obj02_Jump_ResetScr:
 	cmpi.w	#(screen_height/2)-16,(Camera_Y_pos_bias_P2).w	; is screen in its default position?
