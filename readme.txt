@@ -1,3 +1,33 @@
+Sonic 2 but your past haunts you
+
+Hack inspired by Selbi with [Sonic 1 but your past haunts you](https://www.youtube.com/watch?v=gKSEUuwBcvY)
+
+I wanted to do the same thing but with Sonic 2
+
+Same idea, there is a copy of Sonic who does your past inputs, he must be avoided or else you die
+
+-there is a grace period of 5 seconds at start of zone where you're invincible
+
+-all shields are now invincibility
+
+-game overs still exist but infinite continues so you'll never go too far back
+
+some minor qol
+
+-stop Sonic's speed from changing underwater if he has speed shoes
+
+-No air speed cap
+
+-No roll jump lock
+
+known issues:
+
+the clone sonic's palette can look off
+
+the clone sonic's collision detection is too specific, only if you're on exact x and y coordinate, much easier to avoid
+
+original description:
+
 A disassembly of Sonic the Hedgehog 2 for the Sega Mega Drive/Genesis.
 
 To build this, use build.bat if you're a Windows user, or build.lua otherwise. The built ROM will be called 's2built.bin'.
