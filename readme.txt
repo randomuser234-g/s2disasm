@@ -1,6 +1,6 @@
 Sonic 2 but your past haunts you
 
-Hack inspired by Selbi with [Sonic 1 but your past haunts you](https://www.youtube.com/watch?v=gKSEUuwBcvY)
+Hack inspired by Selbi with (Sonic 1 but your past haunts you)[https://www.youtube.com/watch?v=gKSEUuwBcvY]
 
 I wanted to do the same thing but with Sonic 2
 
@@ -23,6 +23,8 @@ some minor qol
 known issues:
 
 the clone sonic's palette can look off
+
+the clone sonic copies current frame rather than at the time of the action, desync in action vs animation
 
 the clone sonic's collision detection is too specific, only if you're on exact x and y coordinate, much easier to avoid
 
