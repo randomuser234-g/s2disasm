@@ -24,7 +24,7 @@ gameRevision = 1
 padToPowerOfTwo = 1
 ;	| If 1, pads the end of the ROM to the next power of two bytes (for real hardware)
 ;
-fixBugs = 1
+fixBugs = 0
 ;	| If 1, enables all bug-fixes
 ;	| See also the 'FixDriverBugs' flag in 's2.sounddriver.asm'
 ;	| See also the 'FixMusicAndSFXDataBugs' flag in 'build.lua'
@@ -419,7 +419,7 @@ GameClrRAM:
 	bsr.w	VDPSetupGame
 	bsr.w	JmpTo_SoundDriverLoad
 	bsr.w	JoypadInit
-	move.b	#GameModeID_SegaScreen,(Game_Mode).w ; set Game Mode to Sega Screen
+	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; set Game Mode to Sega Screen
 ; loc_394:
 MainGameLoop:
 	move.b	(Game_Mode).w,d0	; load Game Mode
@@ -1595,6 +1595,8 @@ PauseGame:
 Pause_Loop:
 	move.b	#VintID_Pause,(Vint_routine).w
 	bsr.w	WaitForVint
+	tst.b	(Slow_motion_flag).w	; is slow-motion cheat on?
+	beq.s	Pause_ChkStart		; if not, branch
 	btst	#button_A,(Ctrl_1_Press).w	; is button A pressed?
 	beq.s	Pause_ChkBC		; if not, branch
 	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; set game mode to 4 (title screen)
@@ -1603,8 +1605,6 @@ Pause_Loop:
 ; ===========================================================================
 ; loc_13D4:
 Pause_ChkBC:
-	tst.b	(Slow_motion_flag).w	; is slow-motion cheat on?
-	beq.s	Pause_ChkStart		; if not, branch
 	btst	#button_B,(Ctrl_1_Held).w ; is button B pressed?
 	bne.s	Pause_SlowMo		; if yes, branch
 	btst	#button_C,(Ctrl_1_Press).w ; is button C pressed?
@@ -5119,13 +5119,13 @@ Level_MainLoop:
 	beq.s	+
 	cmpi.b	#GameModeID_Demo,(Game_Mode).w
 	beq.w	Level_MainLoop
-	move.b	#GameModeID_SegaScreen,(Game_Mode).w ; => SegaScreen
+	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; => SegaScreen
 	rts
 ; ---------------------------------------------------------------------------
 +
 	cmpi.b	#GameModeID_Demo,(Game_Mode).w
 	bne.s	+
-	move.b	#GameModeID_SegaScreen,(Game_Mode).w ; => SegaScreen
+	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; => SegaScreen
 +
 	move.w	#1*60,(Demo_Time_left).w	; 1 second
 	move.w	#$3F,(Palette_fade_range).w
@@ -5175,6 +5175,7 @@ InitPlayers:
 	bne.s	InitPlayers_Alone ; branch if this isn't a Sonic and Tails game
 
 	move.b	#ObjID_Sonic,(MainCharacter+id).w ; load Obj01 Sonic object at $FFFFB000
+	move.b	#ObjID_SpindashDust,(Sonic_Dust+id).w ; load Obj08 Sonic's spindash dust/splash object at $FFFFD100
 
 	cmpi.b	#wing_fortress_zone,(Current_Zone).w
 	beq.s	+ ; skip loading Tails if this is WFZ
@@ -5190,7 +5191,6 @@ InitPlayers:
 	addi_.w	#4,(Sidekick+y_pos).w
 	move.b	#ObjID_SpindashDust,(Tails_Dust+id).w ; load Obj08 Tails' spindash dust/splash object at $FFFFD140
 +
-	move.b	#ObjID_CloneSonic,(Sonic_Shield+id).w ; load ObjBB clone Sonic object at shield
 	rts
 ; ===========================================================================
 ; loc_44BE:
@@ -5200,7 +5200,6 @@ InitPlayers_Alone: ; either Sonic or Tails but not both
 
 	move.b	#ObjID_Sonic,(MainCharacter+id).w ; load Obj01 Sonic object at $FFFFB000
 	move.b	#ObjID_SpindashDust,(Sonic_Dust+id).w ; load Obj08 Sonic's spindash dust/splash object at $FFFFD100
-	move.b	#ObjID_CloneSonic,(Sonic_Shield+id).w ; load ObjBB clone Sonic object at shield
 	rts
 ; ===========================================================================
 ; loc_44D0:
@@ -5208,7 +5207,6 @@ InitPlayers_TailsAlone:
 	move.b	#ObjID_Tails,(MainCharacter+id).w ; load Obj02 Tails object at $FFFFB000
 	move.b	#ObjID_SpindashDust,(Tails_Dust+id).w ; load Obj08 Tails' spindash dust/splash object at $FFFFD100
 	addi_.w	#4,(MainCharacter+y_pos).w
-	move.b	#ObjID_CloneSonic,(Tails_Shield+id).w ; load ObjBB clone Sonic object at shield
 	rts
 ; End of function InitPlayers
 
@@ -10401,7 +10399,7 @@ ContinueScreen:
 	bhs.s	-
 	tst.w	(Demo_Time_left).w
 	bne.w	-
-	move.b	#GameModeID_SegaScreen,(Game_Mode).w ; => SegaScreen
+	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; => SegaScreen
 	rts
 ; ---------------------------------------------------------------------------
 +
@@ -10922,7 +10920,7 @@ TwoPlayerResultsDone_ZoneOrSpecialStages:
 TwoPlayerResultsDone_Game:
 	subq.w	#1,d0	; were we at the game results screen? (VsRSID_Game)
 	bne.s	TwoPlayerResultsDone_SpecialStage ; if not, branch
-	move.b	#GameModeID_SegaScreen,(Game_Mode).w ; => SegaScreen
+	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; => SegaScreen
 	rts
 ; ===========================================================================
 ; loc_802C:
@@ -12156,7 +12154,7 @@ OptionScreen_Select_Not1P:
 ; loc_90D8:
 OptionScreen_Select_Other:
 	; When pressing START on the sound test option, return to the SEGA screen
-	move.b	#GameModeID_SegaScreen,(Game_Mode).w ; => SegaScreen
+	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; => SegaScreen
 	rts
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
@@ -12521,7 +12519,7 @@ LevelSelect_PressStart:
 
 ;loc_944C:
 LevelSelect_Return:
-	move.b	#GameModeID_SegaScreen,(Game_Mode).w ; => SegaScreen
+	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; => SegaScreen
 	rts
 ; ===========================================================================
 ; -----------------------------------------------------------------------------
@@ -13262,7 +13260,7 @@ EndgameCredits:
 	dbf	d6,-
 +
 	st.b	(Level_Inactive_flag).w
-	move.b	#GameModeID_SegaScreen,(Game_Mode).w ; => SegaScreen
+	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; => SegaScreen
 
 .return:
 	rts
@@ -25772,10 +25770,23 @@ super_shoes_Tails:
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Shield Monitor
-; doesn't actually give shield but do invincible instead
+; gives the player a shield that absorbs one hit
 ; ---------------------------------------------------------------------------
 shield_monitor:
-	jmp	invincible_monitor	;
+	addq.w	#1,(a2)
+	bset	#status_secondary.shield,status_secondary(a1)	; give shield status
+	move.w	#SndID_Shield,d0
+	jsr	(PlayMusic).l
+	tst.b	parent+1(a0)
+	bne.s	+
+	move.b	#ObjID_Shield,(Sonic_Shield+id).w ; load Obj38 (shield) at $FFFFD180
+	move.w	a1,(Sonic_Shield+parent).w
+	rts
+; ---------------------------------------------------------------------------
++	; give shield to sidekick
+	move.b	#ObjID_Shield,(Tails_Shield+id).w ; load Obj38 (shield) at $FFFFD1C0
+	move.w	a1,(Tails_Shield+parent).w
+	rts
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Invincibility Monitor
@@ -27528,6 +27539,9 @@ Obj39_Dismiss:
 	tst.b	(Time_Over_flag_2P).w
 	bne.s	Obj39_TimeOver
 	move.b	#GameModeID_ContinueScreen,(Game_Mode).w ; => ContinueScreen
+	tst.b	(Continue_count).w
+	bne.s	Obj39_Check2PMode
+	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; => SegaScreen
 	bra.s	Obj39_Check2PMode
 ; ===========================================================================
 ; loc_14034:
@@ -27777,7 +27791,7 @@ loc_1428C:
 	move.w	(a1,d0.w),d0
 	tst.w	d0
 	bpl.s	loc_1429C
-	move.b	#GameModeID_SegaScreen,(Game_Mode).w ; => SegaScreen
+	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; => SegaScreen
 	rts
 ; ===========================================================================
 
@@ -29891,7 +29905,7 @@ ObjPtr_VerticalLaser:	dc.l ObjB7	; Unused huge vertical laser from WFZ
 ObjPtr_WallTurret:	dc.l ObjB8	; Wall turret from WFZ
 ObjPtr_Laser:		dc.l ObjB9	; Laser from WFZ that shoots down the Tornado
 ObjPtr_WFZWheel:	dc.l ObjBA	; Wheel from WFZ
-ObjPtr_CloneSonic:	dc.l ObjBB	; follows sonic's inputs, if touched results in death
+			dc.l ObjBB	; Unknown
 ObjPtr_WFZShipFire:	dc.l ObjBC	; Fire coming out of Robotnik's ship in WFZ
 ObjPtr_SmallMetalPform:	dc.l ObjBD	; Ascending/descending metal platforms from WFZ
 ObjPtr_LateralCannon:	dc.l ObjBE	; Lateral cannon (temporary platform that pops in/out) from WFZ
@@ -36067,8 +36081,6 @@ Obj01_InWater:
 	move.b	#ObjID_SmallBubbles,(Sonic_BreathingBubbles+id).w ; load Obj0A (Sonic's breathing bubbles) at $FFFFD080
 	move.b	#$81,(Sonic_BreathingBubbles+subtype).w
 	move.l	a0,(Sonic_BreathingBubbles+obj0a_character).w
-	btst	#status_secondary.speed_shoes,status_secondary(a0)	;sonic has speed shoes?
-	bne.s	+							;if yes, don't be slowed by water
 	move.w	#$300,(Sonic_top_speed).w
 	move.w	#6,(Sonic_acceleration).w
 	move.w	#$40,(Sonic_deceleration).w
@@ -36089,16 +36101,13 @@ Obj01_InWater:
 ; loc_1A1FE:
 Obj01_OutWater:
 	bclr	#status.player.underwater,status(a0) ; unset underwater flag
-	beq.w	return_1A18C ; if already above water, branch
+	beq.s	return_1A18C ; if already above water, branch
 
 	movea.l	a0,a1
 	bsr.w	ResumeMusic
-	btst	#status_secondary.speed_shoes,status_secondary(a0)	;sonic has speed shoes?
-	bne.s	Sonic_OutWaterSkipSpeed					;if yes, don't change speed
 	move.w	#$600,(Sonic_top_speed).w
 	move.w	#$C,(Sonic_acceleration).w
 	move.w	#$80,(Sonic_deceleration).w
-Sonic_OutWaterSkipSpeed:
 	tst.b	(Super_Sonic_flag).w
 	beq.s	+
 	move.w	#$A00,(Sonic_top_speed).w
@@ -36840,14 +36849,6 @@ Sonic_ChgJumpDir:
 	neg.w	d1
 	cmp.w	d1,d0	; compare new speed with top speed
 	bgt.s	+	; if new speed is less than the maximum, branch
-	;air speed cap removed, code based on KIS2
-	tst.w	(Demo_mode_flag).w
-	bne.w	.demo
-	add.w	d5,d0
-	cmp.w	d1,d0
-	ble.s	+
-
-.demo:
 	move.w	d1,d0	; limit speed in air going left, even if Sonic was already going faster (speed limit/cap)
 +
 	btst	#button_right,(Ctrl_1_Held_Logical).w
@@ -36857,14 +36858,6 @@ Sonic_ChgJumpDir:
 	add.w	d5,d0	; accelerate right in the air
 	cmp.w	d6,d0	; compare new speed with top speed
 	blt.s	+	; if new speed is less than the maximum, branch
-	;air speed cap removed, code based on KIS2
-	tst.w	(Demo_mode_flag).w
-	bne.w	.demo2
-	sub.w	d5,d0
-	cmp.w	d6,d0
-	bge.s	+
-
-.demo2:
 	move.w	d6,d0	; limit speed in air going right, even if Sonic was already going faster (speed limit/cap)
 ; Obj01_JumpMove:
 +	move.w	d0,x_vel(a0)
@@ -37078,7 +37071,7 @@ return_1AAE6:
 ; ---------------------------------------------------------------------------
 ; loc_1AAE8:
 Sonic_RollJump:
-	;bset	#status.player.rolljumping,status(a0)	; don't set the rolling+jumping flag
+	bset	#status.player.rolljumping,status(a0)	; set the rolling+jumping flag
 	rts
 ; End of function Sonic_Jump
 
@@ -38338,53 +38331,43 @@ SupSonAni_Transform_ptr:	offsetTableEntry.w SupSonAni_Transform	; 31 ; $1F
 SonAni_Lying_ptr:		offsetTableEntry.w SonAni_Lying		; 32 ; $20
 SonAni_LieDown_ptr:		offsetTableEntry.w SonAni_LieDown	; 33 ; $21
 
-SonAni_Walk:	dc.b $FF, $F,$10,$11,$12,$13,$14, $D, $E,$FF
+SonAni_Walk:	dc.b $FF, 8, 9,	$A, $B,	6, 7, $FF
+		rev02even
+SonAni_Run:	dc.b $FF, $1E, $1F, $20, $21, $FF, $FF, $FF
 	rev02even
-SonAni_Run:	dc.b $FF,$2D,$2E,$2F,$30,$FF,$FF,$FF,$FF,$FF
+SonAni_Roll:	dc.b $FE, $2E, $2F, $30, $31, $32, $FF, $FF
 	rev02even
-SonAni_Roll:	dc.b $FE,$3D,$41,$3E,$41,$3F,$41,$40,$41,$FF
+SonAni_Roll2:	dc.b $FE, $2E, $2F, $30, $31, $32, $FF, $FF
 	rev02even
-SonAni_Roll2:	dc.b $FE,$3D,$41,$3E,$41,$3F,$41,$40,$41,$FF
-	rev02even
-SonAni_Push:	dc.b $FD,$48,$49,$4A,$4B,$FF,$FF,$FF,$FF,$FF
+SonAni_Push:	dc.b $FD, $45, $46, $47, $48, $FF, $FF, $FF
 	rev02even
 SonAni_Wait:
-	dc.b   5,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1
-	dc.b   1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  2
-	dc.b   3,  3,  3,  3,  3,  4,  4,  4,  5,  5,  5,  4,  4,  4,  5,  5
-	dc.b   5,  4,  4,  4,  5,  5,  5,  4,  4,  4,  5,  5,  5,  6,  6,  6
-	dc.b   6,  6,  6,  6,  6,  6,  6,  4,  4,  4,  5,  5,  5,  4,  4,  4
-	dc.b   5,  5,  5,  4,  4,  4,  5,  5,  5,  4,  4,  4,  5,  5,  5,  6
-	dc.b   6,  6,  6,  6,  6,  6,  6,  6,  6,  4,  4,  4,  5,  5,  5,  4
-	dc.b   4,  4,  5,  5,  5,  4,  4,  4,  5,  5,  5,  4,  4,  4,  5,  5
-	dc.b   5,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  4,  4,  4,  5,  5
-	dc.b   5,  4,  4,  4,  5,  5,  5,  4,  4,  4,  5,  5,  5,  4,  4,  4
-	dc.b   5,  5,  5,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  7,  8,  8
-	dc.b   8,  9,  9,  9,$FE,  6
+		dc.b $17, 1, 1,	1, 1, 1, 1, 1, 1, 1
+		dc.b 1,	1, 1, 3, 2, 2, 2, 3, 4,$FE,  2
 	rev02even
-SonAni_Balance:	dc.b   9,$CC,$CD,$CE,$CD,$FF
+SonAni_Balance:	dc.b    $1F, $3A, $3B,$FF
 	rev02even
-SonAni_LookUp:	dc.b   5, $B, $C,$FE,  1
+SonAni_LookUp:	dc.b   $3F, 5, $FF
 	rev02even
-SonAni_Duck:	dc.b   5,$4C,$4D,$FE,  1
+SonAni_Duck:	dc.b   $3F, $39, $FF
 	rev02even
-SonAni_Spindash:dc.b   0,$42,$43,$42,$44,$42,$45,$42,$46,$42,$47,$FF
+SonAni_Spindash:dc.b   0,$5B,$5C,$5B,$5D,$5B,$5E,$5B,$5F,$FF
 	rev02even
 SonAni_Blink:	dc.b   1,  2,$FD,  0
 	rev02even
 SonAni_GetUp:	dc.b   3, $A,$FD,  0
 	rev02even
-SonAni_Balance2:dc.b   3,$C8,$C9,$CA,$CB,$FF
+SonAni_Balance2:dc.b   $1F, $3A, $3B,$FF
 	rev02even
-SonAni_Stop:	dc.b   5,$D2,$D3,$D4,$D5,$FD,  0 ; halt/skidding animation
+SonAni_Stop:	dc.b 7,	$37, $38, $FF ; halt/skidding animation
 	rev02even
-SonAni_Float:	dc.b   7,$54,$59,$FF
+SonAni_Float:	dc.b 7,	$3C, $3F, $FF
 	rev02even
-SonAni_Float2:	dc.b   7,$54,$55,$56,$57,$58,$FF
+SonAni_Float2:dc.b 7,	$3C, $3D, $53, $3E, $54, $FF
 	rev02even
-SonAni_Spring:	dc.b $2F,$5B,$FD,  0
+SonAni_Spring:	dc.b $2F, $40, $FD, 0
 	rev02even
-SonAni_Hang:	dc.b   1,$50,$51,$FF
+SonAni_Hang:	dc.b 4,	$41, $42, $FF
 	rev02even
 SonAni_Dash2:	dc.b  $F,$43,$43,$43,$FE,  1
 	rev02even
@@ -38392,23 +38375,23 @@ SonAni_Dash3:	dc.b  $F,$43,$44,$FE,  1
 	rev02even
 SonAni_Hang2:	dc.b $13,$6B,$6C,$FF
 	rev02even
-SonAni_Bubble:	dc.b  $B,$5A,$5A,$11,$12,$FD,  0 ; breathe
+SonAni_Bubble:	dc.b $B, $56, $56, $A, $B,$FD,  0 ; breathe
 	rev02even
-SonAni_DeathBW:	dc.b $20,$5E,$FF
+SonAni_DeathBW:	dc.b $20, $4B,$FF
 	rev02even
-SonAni_Drown:	dc.b $20,$5D,$FF
+SonAni_Drown:	dc.b $20,$4C,$FF
 	rev02even
-SonAni_Death:	dc.b $20,$5C,$FF
+SonAni_Death:	dc.b $20,$4D,$FF
 	rev02even
-SonAni_Hurt:	dc.b $40,$4E,$FF
+SonAni_Hurt:	dc.b 3,	$55,$FF
 	rev02even
-SonAni_Slide:	dc.b   9,$4E,$4F,$FF
+SonAni_Slide:	dc.b 7, $55, $57,$FF
 	rev02even
 SonAni_Blank:	dc.b $77,  0,$FD,  0
 	rev02even
-SonAni_Balance3:dc.b $13,$D0,$D1,$FF
+SonAni_Balance3:dc.b $1F, $3A, $3B,$FF
 	rev02even
-SonAni_Balance4:dc.b   3,$CF,$C8,$C9,$CA,$CB,$FE,  4
+SonAni_Balance4:dc.b $1F, $3A, $3B, $FF
 	rev02even
 SonAni_Lying:	dc.b   9,  8,  9,$FF
 	rev02even
@@ -38459,7 +38442,7 @@ SupSonAni_Run:		dc.b $FF,$B5,$B9,$FF,$FF,$FF,$FF,$FF,$FF,$FF
 	rev02even
 SupSonAni_Push:		dc.b $FD,$BD,$BE,$BF,$C0,$FF,$FF,$FF,$FF,$FF
 	rev02even
-SupSonAni_Stand:	dc.b   7,$72,$73,$74,$73,$FF
+SupSonAni_Stand:	dc.b   7,$58,$59,$5A,$59,$FF
 	rev02even
 SupSonAni_Balance:	dc.b   9,$C2,$C3,$C4,$C3,$C5,$C6,$C7,$C6,$FF
 	rev02even
@@ -39201,12 +39184,9 @@ Obj02_InWater:
 	move.b	#ObjID_SmallBubbles,(Tails_BreathingBubbles+id).w ; load Obj0A (tail's breathing bubbles) at $FFFFD0C0
 	move.b	#$81,(Tails_BreathingBubbles+subtype).w
 	move.l	a0,(Tails_BreathingBubbles+obj0a_character).w ; set its parent to be this (obj0A uses $3C instead of $3E for some reason)
-	btst	#status_secondary.speed_shoes,status_secondary(a0)	;tails has speed shoes?
-	bne.s	+							;if yes, don't be slowed by water
 	move.w	#$300,(Tails_top_speed).w
 	move.w	#6,(Tails_acceleration).w
 	move.w	#$40,(Tails_deceleration).w
-+
 	asr	x_vel(a0)
 	asr	y_vel(a0)
 	asr	y_vel(a0)
@@ -39222,12 +39202,10 @@ Obj02_OutWater:
 
 	movea.l	a0,a1
 	bsr.w	ResumeMusic
-	btst	#status_secondary.speed_shoes,status_secondary(a0)	;tails has speed shoes?
-	bne.s	Tails_OutWaterSkipSpeed					;if yes, don't change speed
 	move.w	#$600,(Tails_top_speed).w
 	move.w	#$C,(Tails_acceleration).w
 	move.w	#$80,(Tails_deceleration).w
-Tails_OutWaterSkipSpeed:
+
 	cmpi.b	#4,routine(a0)	; is Tails falling back from getting hurt?
 	beq.s	+		; if yes, branch
 	asl	y_vel(a0)
@@ -40058,7 +40036,7 @@ return_1C6C2:
 ; ---------------------------------------------------------------------------
 ; loc_1C6C4:
 Tails_RollJump:
-	;bset	#status.player.rolljumping,status(a0) ; don't set the rolling+jumping flag
+	bset	#status.player.rolljumping,status(a0) ; set the rolling+jumping flag
 	rts
 ; End of function Tails_Jump
 
@@ -72278,7 +72256,7 @@ SubObjData_Index: offsetTable
 	offsetTableEntry.w ObjB8_SubObjData	; $74
 	offsetTableEntry.w ObjB9_SubObjData	; $76
 	offsetTableEntry.w ObjBA_SubObjData	; $78
-	offsetTableEntry.w Invalid_SubObjData2	; $7A	removed BB data
+	offsetTableEntry.w ObjBB_SubObjData	; $7A
 	offsetTableEntry.w ObjBC_SubObjData2	; $7C
 	offsetTableEntry.w ObjBD_SubObjData	; $7E
 	offsetTableEntry.w ObjBD_SubObjData	; $80
@@ -72851,7 +72829,7 @@ loc_36ADC:
 	abs.w	d2
 	cmpi.w	#$60,d2
 	bls.s	+
-	jmp	JmpTo39_MarkObjGone
+	jmpto	JmpTo39_MarkObjGone
 ; ===========================================================================
 +
 	addq.b	#2,routine(a0)
@@ -72862,7 +72840,7 @@ loc_36ADC:
 ; loc_36B00:
 Obj8D_Animate:
 	lea	(Ani_obj8D_b).l,a1
-	jsr	JmpTo25_AnimateSprite
+	jsrto	JmpTo25_AnimateSprite
 	jmpto	JmpTo39_MarkObjGone
 ; ===========================================================================
 
@@ -72884,7 +72862,7 @@ Obj8D_Directions:
 ; ===========================================================================
 
 loc_36B34:
-	jsr	JmpTo26_ObjectMove
+	jsrto	JmpTo26_ObjectMove
 	jsr	(ObjCheckFloorDist).l
 	cmpi.w	#-1,d1
 	blt.s	loc_36B5C
@@ -77853,10 +77831,10 @@ ObjB0_Init:
 	rts
 ; ===========================================================================
 off_3A294:
-	dc.l MapRUnc_Sonic.frame45
-	dc.l MapRUnc_Sonic.frame46
-	dc.l MapRUnc_Sonic.frame47
-	dc.l MapRUnc_Sonic.frame48
+	;dc.l MapRUnc_Sonic.frame45	;45, ,46 ,47 ,48
+	;dc.l MapRUnc_Sonic.frame46
+	;dc.l MapRUnc_Sonic.frame47
+	;dc.l MapRUnc_Sonic.frame48
 
 map_piece macro width,height
 	dc.l copysrc,copydst
@@ -79870,6 +79848,33 @@ ObjBA_SubObjData:
 ; sprite mappings
 ; ----------------------------------------------------------------------------
 ObjBA_MapUnc_3BB70:	include "mappings/sprite/objBA.asm"
+; ===========================================================================
+; ----------------------------------------------------------------------------
+; Object BB - Removed object (unknown, unused)
+; ----------------------------------------------------------------------------
+; Sprite_3BB7C:
+ObjBB:
+	moveq	#0,d0
+	move.b	routine(a0),d0
+	move.w	ObjBB_Index(pc,d0.w),d1
+	jmp	ObjBB_Index(pc,d1.w)
+; ===========================================================================
+; off_3BB8A:
+ObjBB_Index:	offsetTable
+		offsetTableEntry.w ObjBB_Init	; 0
+		offsetTableEntry.w ObjBB_Main	; 2
+; ===========================================================================
+; BranchTo8_LoadSubObject
+ObjBB_Init:
+	bra.w	LoadSubObject
+; ===========================================================================
+; BranchTo15_JmpTo39_MarkObjGone
+ObjBB_Main:
+	jmpto	JmpTo39_MarkObjGone
+; ===========================================================================
+; off_3BB96:
+ObjBB_SubObjData:
+	subObjData ObjBB_MapUnc_3BBA0,make_art_tile(ArtTile_ArtNem_Unknown,1,0),1<<render_flags.level_fg,4,$C,9
 ; ----------------------------------------------------------------------------
 ; sprite mappings
 ; ----------------------------------------------------------------------------
@@ -91265,101 +91270,6 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 	finishBank
 
 ; end of 'ROM'
-; ===========================================================================
-; ----------------------------------------------------------------------------
-; Object BB - sonic clone meant to follow him with seconds of delay
-; ----------------------------------------------------------------------------
-; Sprite_3BB7C:
-ObjBB:
-	moveq	#0,d0
-	move.b	routine(a0),d0
-	move.w	ObjBB_Index(pc,d0.w),d1
-	jmp	ObjBB_Index(pc,d1.w)
-; ===========================================================================
-; off_3BB8A:
-ObjBB_Index:	offsetTable
-		offsetTableEntry.w ObjBB_Init	; 0
-		offsetTableEntry.w ObjBB_StartMove	; 2
-		offsetTableEntry.w ObjBB_Main	; 4
-; ===========================================================================
-; BranchTo8_LoadSubObject
-ObjBB_Init:
-	addq.b	#2,routine(a0)	; => Obj01_Control
-	cmpi.	#2,(Player_mode).w	; is the multiple character flag set to 2 (Tails)?
-	beq.s	TailsArtTileclone		; if yes, load Tails data
-	move.w	#make_art_tile(ArtTile_ArtUnc_Sonic,2,0),art_tile(a0)
-	jsr	Adjust2PArtPointer
-	bra.s	AfterTiles
-TailsArtTileclone:
-	move.w	#make_art_tile(ArtTile_ArtUnc_Tails,2,0),art_tile(a0)
-	jsr	Adjust2PArtPointer
-AfterTiles:
-	move.l	(MainCharacter+mappings),mappings(a0)	; load player mappings
-		move.w	#$100,priority(a0)
-		move.b	#$18,x_radius(a0)
-		move.b	#$18,y_radius(a0)
-		move.b	#4,render_flags(a0)
-		rts
-; ===========================================================================
-; BranchTo15_JmpTo39_MarkObjGone
-ObjBB_StartMove:
-	bset	#status_secondary.invincible,(MainCharacter+status_secondary).w	; make Sonic invincible
-	move.w	#5*60,(MainCharacter+invincibility_time).w ; 5 seconds till you die from standstill
-	addq.b	#2,routine(a0)	; => Obj01_Control
-	rts
-ObjBB_Main:
-	cmpi.	#2,(Player_mode).w	; is the multiple character flag set to 2 (Tails)?
-	beq.s	ObjBB_MainTails		; if yes, load Tails data
-	moveq	#$70,d1				; giving the object an even older entry
-	move.w	(Sonic_Pos_Record_Index).w,d0
-	lea	(Sonic_Pos_Record_Buf).w,a1
-	sub.b	d1,d0
-	lea	(a1,d0.w),a1
-	move.w	(a1)+,x_pos(a0)			; Use previous player x_pos
-	move.w	(a1)+,y_pos(a0)			; Use previous player y_pos
-	jsr	CheckIfDies
-	jsr	CopyPlayerFrames
-	jmp	DisplaySprite
-	rts
-ObjBB_MainTails:
-	moveq	#$70,d1				; giving the object an even older entry
-	move.w	(Tails_Pos_Record_Index).w,d0
-	lea	(Tails_Pos_Record_Buf).w,a1
-	sub.b	d1,d0
-	lea	(a1,d0.w),a1
-	move.w	(a1)+,x_pos(a0)			; Use previous player x_pos
-	move.w	(a1)+,y_pos(a0)			; Use previous player y_pos
-	jsr	CheckIfDies
-	jsr	CopyPlayerFrames
-	jmp	DisplaySprite
-CopyPlayerFrames:
-	move.b	(MainCharacter+obFrame).w,obFrame(a0)	; Use player's current mapping_frame
-	move.b	(MainCharacter+render_flags).w,render_flags(a0)	; Use player's current render_flags
-	move.w	(MainCharacter+priority).w,priority(a0)		; Use player's current priority
-	rts
-CheckIfDies:
-	tst.b	(Update_HUD_timer).w	; has Sonic reached the end of the act?
-	beq.s	PlayerDontKill		; if yes, branch
-	btst	#status_secondary.invincible,(MainCharacter+status_secondary).w	; is Sonic invincible?
-	bne.s	PlayerDontKill			; if yes, branch
-	move.w	(MainCharacter+x_pos).w,d2 ; load Sonic's position into d2,d3
-	move.w	(MainCharacter+y_pos).w,d3
-	cmp.w	x_pos(a0),d2			;is sonic at same X position as clone
-	beq.s	CheckCloneY			
-	rts
-CheckCloneY:
-	cmp.w	y_pos(a0),d3			;is sonic at same Y position as clone
-	beq.s	PlayerCollided			;if yes, he must have touched him, then die
-	rts
-	
-PlayerCollided:
-	cmpi.b	#6,(MainCharacter+routine).w	; is Sonic dead?
-	beq.s	PlayerDontKill		; if not, branch
-	lea	(MainCharacter).w,a0
-	jmp	KillCharacter
-PlayerDontKill:
-	rts
-; ===========================================================================
 	if padToPowerOfTwo && (*-StartOfRom)&(*-StartOfRom-1)
 		cnop	-1,2<<lastbit(*-StartOfRom-1)
 		dc.b	$00
