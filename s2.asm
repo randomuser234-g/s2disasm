@@ -49,6 +49,8 @@ relativeLea = 0|(gameRevision<2)|allOptimizations
 useFullWaterTables = 0
 ;	| If 1, zone offset tables for water levels cover all level slots instead of only slots 8-$F
 ;	| Set to 1 if you've shifted level IDs around or you want water in levels with a level slot below 8
+debugbuild = 0
+;	| If 1, level select and debug instantly enabled on the title screen
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; AS-specific macros and assembler settings
@@ -4318,6 +4320,15 @@ TitleScreen:
 	move.w	#0,(PalCycle_Timer).w
 	move.w	#0,(Two_player_mode).w
 	move.b	#0,(Level_started_flag).w
+
+    if debugbuild
+	;instantly enable the level select and debug
+	move.b	#1,(Level_select_flag).w
+	move.b	#1,(Slow_motion_flag).w
+	move.b	#1,(Debug_options_flag).w
+    else
+	nop
+    endif
 
 	; And finally fade out.
 	bsr.w	Pal_FadeToBlack
@@ -91321,8 +91332,7 @@ AfterTiles:
 ; ===========================================================================
 ; BranchTo15_JmpTo39_MarkObjGone
 ObjBB_StartMove:
-	bset	#status_secondary.invincible,(MainCharacter+status_secondary).w	; make Sonic invincible
-	move.w	#5*60,(MainCharacter+invincibility_time).w ; 5 seconds till you die from standstill
+	move.w	#5*60,invincibility_time(a0) ; 5 seconds until you die from standstill
 	addq.b	#2,routine(a0)	; => Obj01_Control
 	rts
 ObjBB_Main:
@@ -91335,6 +91345,7 @@ ObjBB_Main:
 	lea	(a1,d0.w),a1
 	move.w	(a1)+,x_pos(a0)			; Use previous player x_pos
 	move.w	(a1)+,y_pos(a0)			; Use previous player y_pos
+	jsr	LowerCloneSafeTimer
 	jsr	CheckIfDies
 	jsr	CopyPlayerFrames
 	jmp	DisplaySprite
@@ -91347,6 +91358,7 @@ ObjBB_MainTails:
 	lea	(a1,d0.w),a1
 	move.w	(a1)+,x_pos(a0)			; Use previous player x_pos
 	move.w	(a1)+,y_pos(a0)			; Use previous player y_pos
+	jsr	LowerCloneSafeTimer
 	jsr	CheckIfDies
 	jsr	CopyPlayerFrames
 	jmp	DisplaySprite
@@ -91361,7 +91373,9 @@ CheckIfDies:
 	btst	#status_secondary.invincible,(MainCharacter+status_secondary).w	; is Sonic invincible?
 	bne.s	PlayerDontKill			; if yes, branch
 	btst	#0,(MainCharacter+obj_control).w	; is Sonic interacting with another object that holds him in place or controls his movement somehow?
-	bne.s	PlayerDontKill			; if yes, branch to not kill Sonic
+	bne.s	CloneSafeInteractObj			; if yes, branch to give clone timer to not hurt sonic
+	tst.w	invincibility_time(a0)		;is the clone have invunerable time? (disable damage)
+	bhi.s	PlayerDontKill	; If there was any time left, don't continue.
 	move.w	(MainCharacter+x_pos).w,d2 ; load Sonic's position into d2,d3
 	move.w	(MainCharacter+y_pos).w,d3
 	cmp.w	x_pos(a0),d2			;is sonic at same X position as clone
@@ -91373,11 +91387,19 @@ CheckCloneY:
 	rts
 	
 PlayerCollided:
-	cmpi.b	#6,(MainCharacter+routine).w	; is Sonic dead?
-	beq.s	PlayerDontKill		; if not, branch
+	cmpi.b	#6,(MainCharacter+routine).w	; is Sonic already dead?
+	beq.s	PlayerDontKill		; if yes, branch 
 	lea	(MainCharacter).w,a0
 	jmp	KillCharacter
 PlayerDontKill:
+	rts
+LowerCloneSafeTimer:
+	tst.w	invincibility_time(a0)	;check the clone's safe timer
+	beq.s	PlayerDontKill	; If there wasn't any time left, don't continue.
+	subq.w	#1,invincibility_time(a0)
+	rts
+CloneSafeInteractObj:
+	move.w	#1*60,invincibility_time(a0) ; 1 second of safety for sonic to leave the object
 	rts
 ; ===========================================================================
 	if padToPowerOfTwo && (*-StartOfRom)&(*-StartOfRom-1)
