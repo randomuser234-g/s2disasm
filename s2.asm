@@ -10431,7 +10431,6 @@ ContinueScreen:
 	move.b	d0,(Last_star_pole_hit_2P).w
 	move.l	#5000,(Next_Extra_life_score).w
 	move.l	#5000,(Next_Extra_life_score_2P).w
-	subq.b	#1,(Continue_count).w
 	rts
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
@@ -27540,7 +27539,11 @@ Obj39_Dismiss:
 	tst.b	(Time_Over_flag_2P).w
 	bne.s	Obj39_TimeOver
 	move.b	#GameModeID_ContinueScreen,(Game_Mode).w ; => ContinueScreen
-;removed check for continues here, you will always be treated as if you have continues, 
+	move.b	#2,(Continue_count).w
+;always have 2 continues
+	tst.b	(Continue_count).w
+	bne.s	Obj39_Check2PMode
+	move.b	#GameModeID_SegaScreen,(Game_Mode).w ; => SegaScreen
 	bra.s	Obj39_Check2PMode
 ; ===========================================================================
 ; loc_14034:
@@ -91316,11 +91319,11 @@ ObjBB_Init:
 	addq.b	#2,routine(a0)	; => Obj01_Control
 	cmpi.	#2,(Player_mode).w	; is the multiple character flag set to 2 (Tails)?
 	beq.s	TailsArtTileclone		; if yes, load Tails data
-	move.w	#make_art_tile(ArtTile_ArtUnc_Sonic,2,0),art_tile(a0)
+	move.w	#make_art_tile(ArtTile_ArtUnc_Sonic,1,0),art_tile(a0)
 	jsr	Adjust2PArtPointer
 	bra.s	AfterTiles
 TailsArtTileclone:
-	move.w	#make_art_tile(ArtTile_ArtUnc_Tails,2,0),art_tile(a0)
+	move.w	#make_art_tile(ArtTile_ArtUnc_Tails,1,0),art_tile(a0)
 	jsr	Adjust2PArtPointer
 AfterTiles:
 	move.l	(MainCharacter+mappings),mappings(a0)	; load player mappings
