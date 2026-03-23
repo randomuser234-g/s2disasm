@@ -91359,6 +91359,8 @@ CheckIfDies:
 	beq.s	PlayerDontKill		; if yes, branch
 	btst	#status_secondary.invincible,(MainCharacter+status_secondary).w	; is Sonic invincible?
 	bne.s	PlayerDontKill			; if yes, branch
+	btst	#0,(MainCharacter+obj_control).w	; is Sonic interacting with another object that holds him in place or controls his movement somehow?
+	bne.s	PlayerDontKill			; if yes, branch to not kill Sonic
 	move.w	(MainCharacter+x_pos).w,d2 ; load Sonic's position into d2,d3
 	move.w	(MainCharacter+y_pos).w,d3
 	cmp.w	x_pos(a0),d2			;is sonic at same X position as clone
