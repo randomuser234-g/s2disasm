@@ -78472,6 +78472,7 @@ ObjB2_Wait_Leader_position:
 	cmpi.w	#$5EC,y_pos(a1)
 	blo.s	+	; rts
 	clr.w	(Ctrl_1_Logical).w
+	clr.b	(Update_HUD_timer).w		;stop the timer once Sonic has fallen down here
 	addq.w	#1,objoff_2E(a0)
 	cmpi.w	#$40,objoff_2E(a0)
 	bhs.s	++
