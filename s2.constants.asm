@@ -788,6 +788,7 @@ ObjID_VerticalLaser =		id(ObjPtr_VerticalLaser)	; B7
 ObjID_WallTurret =		id(ObjPtr_WallTurret)		; B8
 ObjID_Laser =			id(ObjPtr_Laser)		; B9
 ObjID_WFZWheel =		id(ObjPtr_WFZWheel)		; BA
+ObjID_CloneSonic =		id(ObjPtr_CloneSonic)		; BB
 ObjID_WFZShipFire =		id(ObjPtr_WFZShipFire)		; BC
 ObjID_SmallMetalPform =		id(ObjPtr_SmallMetalPform)	; BD
 ObjID_LateralCannon =		id(ObjPtr_LateralCannon)	; BE
