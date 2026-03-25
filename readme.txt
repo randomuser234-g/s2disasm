@@ -26,8 +26,6 @@ the clone sonic's palette can look off
 
 the clone sonic copies current frame rather than at the time of the action, desync in action vs animation
 
-the clone sonic's collision detection is too specific, only if you're on exact x and y coordinate, much easier to avoid
-
 original description:
 
 A disassembly of Sonic the Hedgehog 2 for the Sega Mega Drive/Genesis.
