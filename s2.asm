@@ -91341,7 +91341,7 @@ ObjBB_StartMove:
 ObjBB_Main:
 	cmpi.	#2,(Player_mode).w	; is the multiple character flag set to 2 (Tails)?
 	beq.s	ObjBB_MainTails		; if yes, load Tails data
-	moveq	#$70,d1				; giving the object an even older entry
+	move.w	#$C0,d1				; giving the object an even older entry
 	move.w	(Sonic_Pos_Record_Index).w,d0
 	lea	(Sonic_Pos_Record_Buf).w,a1
 	sub.b	d1,d0
@@ -91354,7 +91354,7 @@ ObjBB_Main:
 	jmp	DisplaySprite
 	rts
 ObjBB_MainTails:
-	moveq	#$70,d1				; giving the object an even older entry
+	move.w	#$C0,d1				; little less than 1 second
 	move.w	(Tails_Pos_Record_Index).w,d0
 	lea	(Tails_Pos_Record_Buf).w,a1
 	sub.b	d1,d0
