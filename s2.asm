@@ -83241,6 +83241,7 @@ ObjC7_Beaten:
 	moveq	#100,d0
 	bsr.w	AddPoints
 	clr.b	anim_frame_duration(a0)
+	clr.b	(Update_HUD_timer).w
 	move.b	#$E,routine_secondary(a0)
 	bset	#status.npc.no_balancing,status(a0)
 	clr.b	anim(a0)
