@@ -13035,6 +13035,7 @@ EndingSequence:
 	move.w	#$8ADF,(Hint_counter_reserve).w	; H-INT every 224th scanline
 	move.w	(Hint_counter_reserve).w,(a6)
 	clr.b	(Super_Sonic_flag).w
+	move.b	#1,(Update_HUD_timer).w
 	cmpi.b	#7,(Emerald_count).w
 	bne.s	+
 	cmpi.w	#2,(Player_mode).w
