@@ -91379,15 +91379,18 @@ CheckIfDies:
 	bne.s	CloneSafeInteractObj			; if yes, branch to give clone timer to not hurt sonic
 	tst.w	invincibility_time(a0)		;is the clone have invunerable time? (disable damage)
 	bhi.s	PlayerDontKill	; If there was any time left, don't continue.
-	move.w	(MainCharacter+x_pos).w,d2 ; load Sonic's position into d2,d3
-	move.w	(MainCharacter+y_pos).w,d3
-	cmp.w	x_pos(a0),d2			;is sonic at same X position as clone
-	beq.s	CheckCloneY			
-	rts
+
+	move.w	(MainCharacter+x_pos).w,d0
+	add.w	#$10,d0	
+	sub.w	x_pos(a0),d0
+	cmpi.w	#$20,d0		;is the main character within this range?
+	bhs.s	PlayerDontKill	;if not, don't die
 CheckCloneY:
-	cmp.w	y_pos(a0),d3			;is sonic at same Y position as clone
-	beq.s	PlayerCollided			;if yes, he must have touched him, then die
-	rts
+	move.w	(MainCharacter+y_pos).w,d0
+	add.w	#$10,d0
+	sub.w	y_pos(a0),d0
+	cmpi.w	#$20,d0		;is the main character within this range?
+	bhs.s	PlayerDontKill	;if not, don't die
 	
 PlayerCollided:
 	cmpi.b	#6,(MainCharacter+routine).w	; is Sonic already dead?
