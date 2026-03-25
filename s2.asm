@@ -91339,22 +91339,24 @@ ObjBB_StartMove:
 	addq.b	#2,routine(a0)	; => Obj01_Control
 	rts
 ObjBB_Main:
+	cmpi.b	#6,(MainCharacter+routine).w	; is Sonic already dead?
+	bhs.w	.skipupdatexypos		; if yes, branch 
 	cmpi.	#2,(Player_mode).w	; is the multiple character flag set to 2 (Tails)?
 	beq.s	ObjBB_MainTails		; if yes, load Tails data
-	move.w	#$C0,d1				; giving the object an even older entry
+	move.w	#$F0,d1				; giving the object an even older entry
 	move.w	(Sonic_Pos_Record_Index).w,d0
 	lea	(Sonic_Pos_Record_Buf).w,a1
 	sub.b	d1,d0
 	lea	(a1,d0.w),a1
 	move.w	(a1)+,x_pos(a0)			; Use previous player x_pos
 	move.w	(a1)+,y_pos(a0)			; Use previous player y_pos
+.skipupdatexypos:
 	jsr	LowerCloneSafeTimer
 	jsr	CheckIfDies
 	jsr	CopyPlayerFrames
 	jmp	DisplaySprite
-	rts
 ObjBB_MainTails:
-	move.w	#$C0,d1				; little less than 1 second
+	move.w	#$F0,d1				; 1 second, can fully jump up and down on flat ground before clone starts jump
 	move.w	(Tails_Pos_Record_Index).w,d0
 	lea	(Tails_Pos_Record_Buf).w,a1
 	sub.b	d1,d0
@@ -91394,7 +91396,7 @@ CheckCloneY:
 	
 PlayerCollided:
 	cmpi.b	#6,(MainCharacter+routine).w	; is Sonic already dead?
-	beq.s	PlayerDontKill		; if yes, branch 
+	bhs.w	PlayerDontKill		; if yes, branch 
 	lea	(MainCharacter).w,a0
 	jmp	KillCharacter
 PlayerDontKill:
