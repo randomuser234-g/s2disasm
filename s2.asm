@@ -4519,9 +4519,9 @@ TitleScreen_Loop:
 
 	move.b	#GameModeID_Level,(Game_Mode).w ; => Level (Zone play mode)
 
-	move.b	#3,(Life_count).w
-	move.b	#3,(Life_count_2P).w
-
+	move.b	#20,(Life_count).w
+	move.b	#20,(Life_count_2P).w
+	move.b	#1,(Continue_count).w
 	moveq	#0,d0
 	move.w	d0,(Ring_count).w
 	move.l	d0,(Timer).w
@@ -4529,7 +4529,6 @@ TitleScreen_Loop:
 	move.w	d0,(Ring_count_2P).w
 	move.l	d0,(Timer_2P).w
 	move.l	d0,(Score_2P).w
-	move.b	d0,(Continue_count).w
 
 	move.l	#5000,(Next_Extra_life_score).w
 	move.l	#5000,(Next_Extra_life_score_2P).w
@@ -10418,8 +10417,8 @@ ContinueScreen:
 ; ---------------------------------------------------------------------------
 +
 	move.b	#GameModeID_Level,(Game_Mode).w ; => Level (Zone play mode)
-	move.b	#3,(Life_count).w
-	move.b	#3,(Life_count_2P).w
+	move.b	#20,(Life_count).w
+	move.b	#20,(Life_count_2P).w
 	moveq	#0,d0
 	move.w	d0,(Ring_count).w
 	move.l	d0,(Timer).w
@@ -10431,6 +10430,7 @@ ContinueScreen:
 	move.b	d0,(Last_star_pole_hit_2P).w
 	move.l	#5000,(Next_Extra_life_score).w
 	move.l	#5000,(Next_Extra_life_score_2P).w
+	addq.b	#1,(Continue_count).w	;add live instead of subtract, treat like a game over tally
 	rts
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
@@ -12573,8 +12573,9 @@ LevelSelect_StartZone:
 	andi.w	#$3FFF,d0
 	move.w	d0,(Current_ZoneAndAct).w
 	move.b	#GameModeID_Level,(Game_Mode).w ; => Level (Zone play mode)
-	move.b	#3,(Life_count).w
-	move.b	#3,(Life_count_2P).w
+	move.b	#20,(Life_count).w
+	move.b	#20,(Life_count_2P).w
+	move.b	#1,(Continue_count).w	;moved continue count and not use d0
 	moveq	#0,d0
 	move.w	d0,(Ring_count).w
 	move.l	d0,(Timer).w
@@ -12582,7 +12583,6 @@ LevelSelect_StartZone:
 	move.w	d0,(Ring_count_2P).w
 	move.l	d0,(Timer_2P).w
 	move.l	d0,(Score_2P).w
-	move.b	d0,(Continue_count).w
 	move.l	#5000,(Next_Extra_life_score).w
 	move.l	#5000,(Next_Extra_life_score_2P).w
 	move.b	#MusID_FadeOut,d0
@@ -27540,8 +27540,7 @@ Obj39_Dismiss:
 	tst.b	(Time_Over_flag_2P).w
 	bne.s	Obj39_TimeOver
 	move.b	#GameModeID_ContinueScreen,(Game_Mode).w ; => ContinueScreen
-	move.b	#2,(Continue_count).w
-;always have 2 continues
+;continue screen starts
 	tst.b	(Continue_count).w
 	bne.s	Obj39_Check2PMode
 	move.b	#GameModeID_SegaScreen,(Game_Mode).w ; => SegaScreen
@@ -27553,6 +27552,10 @@ Obj39_TimeOver:
 	move.w	#1,(Level_Inactive_flag).w
 ; loc_1403E:
 Obj39_Check2PMode:
+	cmpi.b	#20,(Continue_count).w
+	ble.s	.skipcont
+	subq.b	#1,(Continue_count).w
+.skipcont:
 	tst.w	(Two_player_mode).w
 	beq.s	Obj39_Display
 
@@ -27742,8 +27745,8 @@ loc_141E6:
 	jsr	(PlaySound).l
 	addq.b	#2,routine(a0)
 	move.w	#$B4,anim_frame_duration(a0)
-	cmpi.w	#1000,(Total_Bonus_Countdown).w
-	blo.s	return_14254
+	;cmpi.w	#1000,(Total_Bonus_Countdown).w	;skip requirement
+	;blo.s	return_14254
 	move.w	#$12C,anim_frame_duration(a0)
 	lea	next_object(a0),a1 ; a1=object
 
@@ -27763,7 +27766,8 @@ loc_14220:
 	bsr.w	Adjust2PArtPointer2
 	move.b	#0,render_flags(a1)
 	move.w	#60,anim_frame_duration(a1)
-	addq.b	#1,(Continue_count).w
+	addq.b	#1,(Update_HUD_lives).w	; update lives counter
+	addq.b	#1,(Life_count).w	;give you a life instead of a continue
 
 return_14254:
 
@@ -27815,7 +27819,7 @@ loc_142B0:
 
 loc_142BC:
 	addi_.b	#2,routine(a0)
-	move.w	#SndID_ContinueJingle,d0
+	move.w	#MusID_ExtraLife,d0	;SndID_ContinueJingle to MusID_ExtraLife at result screen
 	jsr	(PlaySound).l
 
 loc_142CC:
@@ -38606,7 +38610,7 @@ Obj02_Init_Continued:
 	move.b	#4,flip_speed(a0)
 	move.b	#30,air_left(a0)
 	move.w	#0,(Tails_CPU_routine).w	; set AI state to TailsCPU_Init
-	move.w	#0,(Tails_control_counter).w
+	move.w	#1,(Tails_control_counter).w
 	move.w	#0,(Tails_respawn_counter).w
 	move.b	#ObjID_TailsTails,(Tails_Tails+id).w ; load Obj05 (Tails' Tails) at $FFFFD000
 	move.w	a0,(Tails_Tails+parent).w ; set its parent object to this
@@ -39321,17 +39325,30 @@ Obj02_MdRoll:
 ;        Why they gave it a separate copy of the code, I don't know.
 ; loc_1C082: Obj02_MdJump2:
 Obj02_MdJump:
+        tst.b   (Tails_doublejump).w                  
+        bne.s   .flying
+
 	bsr.w	Tails_JumpHeight
 	bsr.w	Tails_ChgJumpDir
 	bsr.w	Tails_LevelBound
 	jsr	(ObjectMoveAndFall).l
 	btst	#status.player.underwater,status(a0)	; is Tails underwater?
-	beq.s	+					; if not, branch
+	beq.s	.afterunderwater					; if not, branch
 	subi.w	#$28,y_vel(a0)	; reduce gravity by $28 ($38-$28=$10)
-+
+.afterunderwater:
 	bsr.w	Tails_JumpAngle
 	bsr.w	Tails_DoLevelCollision
 	rts
+.flying:
+		jsr	Tails_StartFlying
+                bsr     Tails_ChgJumpDir                       ; Offset_0x00E0EC
+                bsr     Tails_LevelBound                  ; Offset_0x00E17C
+                jsr     (ObjectMove)                           ; Offset_0x01111E
+                bsr     Tails_JumpAngle                        ; Offset_0x00E590
+                movem.l A4-A6, -(A7)
+                bsr     Tails_DoLevelCollision                           ; Offset_0x00E5F0
+                movem.l (A7)+, A4-A6
+		rts
 ; End of subroutine Obj02_MdJump
 
 ; ---------------------------------------------------------------------------
@@ -40105,16 +40122,19 @@ Tails_JumpHeight:
 
 	move.w	#-$400,d1
 	btst	#status.player.underwater,status(a0)	; is Tails underwater?
-	beq.s	+		; if not, branch
+	beq.s	.notunderwater		; if not, branch
 	move.w	#-$200,d1
-+
+.notunderwater:
 	cmp.w	y_vel(a0),d1	; is Tails going up faster than d1?
-	ble.s	+		; if not, branch
+	ble.s	.tails		; if not, branch
 	move.b	(Ctrl_2_Held_Logical).w,d0
 	andi.b	#button_B_mask|button_C_mask|button_A_mask,d0 ; is a jump button pressed?
-	bne.s	+		; if yes, branch
+	bne.s	.end		; if yes, branch
 	move.w	d1,y_vel(a0)	; immediately reduce Tails's upward speed to d1
-+
+.end:
+	rts
+.tails:
+	jsr	Tails_Flight
 	rts
 ; ---------------------------------------------------------------------------
 ; loc_1C6F8:
@@ -91411,6 +91431,104 @@ LowerCloneSafeTimer:
 CloneSafeInteractObj:
 	move.w	#1*60,invincibility_time(a0) ; 1 second of safety for sonic to leave the object
 	rts
+; ===========================================================================
+;Subroutine to let Tails fly ala Sonic 3 (prototype)
+; ===========================================================================
+Tails_Flight:
+		btst	#2,status(a0)		; tails is rolling?
+		beq.w	rts_TailsFlight		;if not, don't fly
+		move.b	(Ctrl_2_Press_Logical).w,d0
+		andi.b	#button_B_mask|button_C_mask|button_A_mask,d0 ; is A, B or C pressed?
+		beq.s	rts_TailsFlight		;if not, don't fly
+		tst.w	(Tails_control_counter).w	; if CPU has control
+		beq.s	rts_TailsFlight		;if yes, don't fly
+		; we already checked this earlier...
+		;btst	#2,status(a0)
+		;beq.s	Offset_0x00E382
+		;bclr	#2,status(a0)
+		;move.b	Obj_Height_2(a0),d1			
+		;move.b	Obj_Height_3(a0),Obj_Height_2(a0)
+		;move.b	Obj_Width_3(a0),Obj_Width_2(a0)
+		;sub.b	Obj_Height_3(a0),d1
+		;ext.w	d1
+		;add.w	d1,obY(a0)
+		;move.b	#id_Walk,anim(a0)
+
+Offset_0x00E382:
+		move.b	#1,(Tails_doublejump).w
+		andi.b	#button_B_mask|button_C_mask,d0
+		beq.s	.20anim
+		move.b	#2,(Tails_doublejump).w
+
+;Offset_0x00E394:
+.20anim:
+		move.b	#AniIDTailsAni_Fly,anim(a0)
+
+;Offset_0x00E39A:
+rts_TailsFlight:
+		rts
+; End of function Tails_Flight
+;---------------------------------------------------------------------------------------------------------
+Tails_StartFlying:
+		cmpi.b	#AniIDTailsAni_Fly,anim(a0)	;is tails in flying animation?
+		bne.s	.noflying		;if not, don't fly
+		bra.s	.flying			;otherwise fly
+	.noflying:
+		move.b	#0,(Tails_doublejump).w
+		rts
+	.flying:
+		cmpi.b	#1,(Tails_doublejump).w
+		bne.s	FlyP1
+		move.b	(Ctrl_2_Held_Logical+1).w,d0
+		andi.b	#button_B_mask|button_C_mask,d0		;$30?
+		beq.s	Tails_Speed1
+		subi.w	#$40,y_vel(a0)
+		bra.s	Tails_Speed2
+
+;Offset_0x00DC18:
+Tails_Speed1:
+		move.b	(Ctrl_2_Held_Logical).w,d0
+		andi.b	#button_A_mask,d0		;2 flying styles, if A is held, smooth acceleration flight
+		beq.s	Tails_Speed2		;if A isn't held, C must be pressed and will "bob" tails up in the air in multiple spirts, similar to jump
+		subi.w	#$10,y_vel(a0)
+
+;Offset_0x00DC28:
+Tails_Speed2:
+		addi.w	#8,y_vel(a0)
+		cmpi.w	#-$100,y_vel(a0)
+		bge.s	Fly_DoNothing
+		move.w	#-$100,y_vel(a0)
+
+;Offset_0x00DC3C:
+Fly_DoNothing:
+                rts
+; ---------------------------------------------------------------------------
+
+;Offset_0x00DC3E:
+FlyP1:
+		move.b	(Ctrl_2_Held_Logical+1).w,d0
+		andi.b	#button_B_mask|button_C_mask,d0
+		beq.s	FlyP2
+		tst.w	y_vel(a0)
+		bmi.s	FlyP3
+		subi.w	#$300,y_vel(a0)
+		bra.s	FlyP3
+
+;Offset_0x00DC56:
+FlyP2:
+		move.b	(Ctrl_2_Held_Logical).w,d0
+		andi.b	#button_A_mask,d0
+		beq.s	FlyP3
+		tst.w	y_vel(a0)
+		bmi.s	FlyP3
+		subi.w	#$200,y_vel(a0)
+
+;Offset_0x00DC6C:
+FlyP3:
+		addi.w	#8,y_vel(a0)
+		rts
+; End of function Tails_StartFlying
+
 ; ===========================================================================
 	if padToPowerOfTwo && (*-StartOfRom)&(*-StartOfRom-1)
 		cnop	-1,2<<lastbit(*-StartOfRom-1)

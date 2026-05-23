@@ -1488,7 +1488,8 @@ Misc_Variables:
 ; extra variables for the second player (CPU) in 1-player mode
 Tails_control_counter:		ds.w	1	; how long until the CPU takes control
 Tails_respawn_counter:		ds.w	1
-				ds.w	1	; unused
+Sonic_doublejump:		ds.b	1	; unused, now used for extra abilities
+Tails_doublejump:		ds.b	1	; unused
 Tails_CPU_routine:		ds.w	1
 Tails_CPU_target_x:		ds.w	1
 Tails_CPU_target_y:		ds.w	1
