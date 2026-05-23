@@ -42,6 +42,8 @@ S3 prototype flight minus carrying sonic, this includes most quirks and downside
 
 insta shield uses super sonic graphic looks broken when used in 2P
 
+can't compile for REV2 due to errors
+
 original description:
 
 A disassembly of Sonic the Hedgehog 2 for the Sega Mega Drive/Genesis.
