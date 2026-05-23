@@ -16,10 +16,15 @@ some minor qol
 
 -more lives
 
--Tails flight (S3 prototype flight minus carrying sonic, this includes most quirks and downsides like infinite flight but can't hit badniks)
+-Tails flight
 To control, there are 2 different modes
 hold A for gradual flight
 mash B/C for quick "bursts"
+
+(A/B/C) in the air for the move
+-bigger hitbox
+-invincible temporarily
+-if conditions are met you turn super with this button combo
 
 -stop Sonic's speed from changing underwater if he has speed shoes
 
@@ -32,6 +37,10 @@ known issues:
 the clone sonic's palette can look off
 
 the clone sonic copies current frame rather than at the time of the action, desync in action vs animation
+
+S3 prototype flight minus carrying sonic, this includes most quirks and downsides like infinite flight but can't hit badniks
+
+insta shield uses super sonic graphic looks broken when used in 2P
 
 original description:
 
