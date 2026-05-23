@@ -14,6 +14,13 @@ Same idea, there is a copy of Sonic who does your past inputs, he must be avoide
 
 some minor qol
 
+-more lives
+
+-Tails flight (S3 prototype flight minus carrying sonic, this includes most quirks and downsides like infinite flight but can't hit badniks)
+To control, there are 2 different modes
+hold A for gradual flight
+mash B/C for quick "bursts"
+
 -stop Sonic's speed from changing underwater if he has speed shoes
 
 -No air speed cap
