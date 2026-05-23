@@ -37141,8 +37141,7 @@ Sonic_JumpHeight:
 	bne.s	.end		; if yes, branch
 	move.w	d1,y_vel(a0)	; immediately reduce Sonic's upward speed to d1
 .end:
-	tst.b	y_vel(a0)		; is Sonic exactly at the height of his jump?
-	beq.s	Sonic_CheckGoSuper	; if yes, test for turning into Super Sonic
+	;no super sonic check here, it was moved to instashield
 	rts
 .instashield:
 	jsr	Sonic_InstaShield
@@ -37169,17 +37168,7 @@ return_1AB36:
 
 ; loc_1AB38: test_set_SS:
 Sonic_CheckGoSuper:
-	tst.b	(Super_Sonic_flag).w	; is Sonic already Super?
-	bne.s	return_1ABA4		; if yes, branch
-	cmpi.b	#7,(Emerald_count).w	; does Sonic have exactly 7 emeralds?
-	bne.s	return_1ABA4		; if not, branch
-	cmpi.w	#50,(Ring_count).w	; does Sonic have at least 50 rings?
-	blo.s	return_1ABA4		; if not, branch
-    if gameRevision>=2
-	; fixes a bug where the player can get stuck if transforming at the end of a level
-	tst.b	(Update_HUD_timer).w	; has Sonic reached the end of the act?
-	beq.s	return_1ABA4		; if yes, branch
-    endif
+	;moved checks from here to instashield there
 
     if fixBugs
 	; If Sonic was executing a roll-jump when he turned Super, then this
@@ -91617,14 +91606,23 @@ Sonic_InstaShield:
 		move.b	(Ctrl_1_Press_Logical).w,d0
 		andi.b	#button_B_mask|button_C_mask|button_A_mask,d0 ; is A, B or C pressed?
 		beq.s	rts_SonicInstaShield		;if not, don't do move
+		;turn super sonic
+		tst.b	(Super_Sonic_flag).w	; is Sonic already Super?
+		bne.s	rts_SonicInstaShield		; if yes, no insta shield
+		cmpi.b	#7,(Emerald_count).w	; does Sonic have exactly 7 emeralds?
+		bne.s	.skipsuper		; if not, don't go super
+		cmpi.w	#50,(Ring_count).w	; does Sonic have at least 50 rings?
+		blo.w	.skipsuper	;if not, don't go super
+	; fixes a bug where the player can get stuck if transforming at the end of a level
+	tst.b	(Update_HUD_timer).w	; has Sonic reached the end of the act?
+	beq.s	.skipsuper		; if yes, don't go super
+		jmp	Sonic_CheckGoSuper	;otherwise, turning into Super Sonic
+	.skipsuper:
 		move.b	#1,(Sonic_doublejump).w
 		move.b	#AniIDSonAni_InstaShield,anim(a0)
 	move.b	#SndID_SpikeSwitch,d0 ; play the spike switch sound
 	jsr	PlaySound
 rts_SonicInstaShield:
-		cmpi.b	#AniIDSonAni_Roll,anim(a0)	;just roll?
-		bne.w	.end	;if not, don't
-	.end:
 		rts
 ; ===========================================================================
 	if padToPowerOfTwo && (*-StartOfRom)&(*-StartOfRom-1)
