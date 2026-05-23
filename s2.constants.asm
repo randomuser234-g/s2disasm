@@ -1029,6 +1029,7 @@ AniIDSonAni_Balance4		= id(SonAni_Balance4_ptr)	; 30 ; $1E ; Exclusive to Sonic
 AniIDSupSonAni_Transform	= id(SupSonAni_Transform_ptr)	; 31 ; $1F ; Exclusive to Sonic
 AniIDSonAni_Lying		= id(SonAni_Lying_ptr)		; 32 ; $20 ; Exclusive to Sonic
 AniIDSonAni_LieDown		= id(SonAni_LieDown_ptr)	; 33 ; $21 ; Exclusive to Sonic
+AniIDSonAni_InstaShield		= id(SonAni_InstaShield_ptr)	; 34 ; $22 ; Exclusive to Sonic
 
 
 offset :=	TailsAniData

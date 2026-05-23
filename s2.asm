@@ -31,7 +31,7 @@ fixBugs = 1
 allOptimizations = 0
 ;	| If 1, enables all optimizations
 ;
-skipChecksumCheck = 0
+skipChecksumCheck = 1
 ;	| If 1, disables the slow bootup checksum calculation
 ;
 zeroOffsetOptimization = 0|allOptimizations
@@ -421,7 +421,12 @@ GameClrRAM:
 	bsr.w	VDPSetupGame
 	bsr.w	JmpTo_SoundDriverLoad
 	bsr.w	JoypadInit
+    if debugbuild
+	;go to title sooner
+	move.b	#GameModeID_TitleScreen,(Game_Mode).w ; set Game Mode to title screen
+    else
 	move.b	#GameModeID_SegaScreen,(Game_Mode).w ; set Game Mode to Sega Screen
+    endif
 ; loc_394:
 MainGameLoop:
 	move.b	(Game_Mode).w,d0	; load Game Mode
@@ -25459,7 +25464,11 @@ SolidObject_Monitor_Sonic:
 	btst	d6,status(a0)			; is Sonic standing on the monitor?
 	bne.s	Obj26_ChkOverEdge		; if yes, branch
 	cmpi.b	#AniIDSonAni_Roll,anim(a1)		; is Sonic spinning?
-	bne.w	SolidObject_cont		; if not, branch
+	beq.w	.nocol		; if yes, branch
+	cmpi.b	#AniIDSonAni_InstaShield,anim(a1)		; is Sonic instashield?
+	beq.w	.nocol		; if yes, branch
+	bra.w	SolidObject_cont		; otherwise, solid object
+.nocol:
 	rts
 ; End of function SolidObject_Monitor_Sonic
 
@@ -35272,6 +35281,8 @@ SolidObject_TestClearPush:
 	beq.s	SolidObject_NoCollision	; if not, branch
 	cmpi.b	#AniIDSonAni_Roll,anim(a1)
 	beq.s	Solid_NotPushing
+	cmpi.b	#AniIDSonAni_InstaShield,anim(a1)
+	beq.s	Solid_NotPushing
     if fixBugs
 	; Prevent Sonic or Tails from entering their running animation when
 	; stood next to solid objects while charging a Spin Dash, dying, or
@@ -37079,6 +37090,7 @@ Sonic_Jump:
 	add.w	d0,y_vel(a0)	; make Sonic jump (in Y)
 	bset	#status.player.in_air,status(a0)
 	bclr	#status.player.pushing,status(a0)
+	move.b	#0,(Sonic_doublejump).w		;doublejump flag
 	addq.l	#4,sp
 	move.b	#1,jumping(a0)
 	clr.b	stick_to_convex(a0)
@@ -37119,18 +37131,21 @@ Sonic_JumpHeight:
 
 	move.w	#-$400,d1
 	btst	#status.player.underwater,status(a0)	; is Sonic underwater?
-	beq.s	+		; if not, branch
+	beq.s	.notunderwater		; if not, branch
 	move.w	#-$200,d1
-+
+.notunderwater:
 	cmp.w	y_vel(a0),d1	; is Sonic going up faster than d1?
-	ble.s	+		; if not, branch
+	ble.s	.instashield		; if not, branch
 	move.b	(Ctrl_1_Held_Logical).w,d0
 	andi.b	#button_B_mask|button_C_mask|button_A_mask,d0 ; is a jump button pressed?
-	bne.s	+		; if yes, branch
+	bne.s	.end		; if yes, branch
 	move.w	d1,y_vel(a0)	; immediately reduce Sonic's upward speed to d1
-+
+.end:
 	tst.b	y_vel(a0)		; is Sonic exactly at the height of his jump?
 	beq.s	Sonic_CheckGoSuper	; if yes, test for turning into Super Sonic
+	rts
+.instashield:
+	jsr	Sonic_InstaShield
 	rts
 ; ---------------------------------------------------------------------------
 ; loc_1AB22:
@@ -37813,6 +37828,7 @@ Sonic_ResetOnFloor_Part3:
 	bclr	#status.player.in_air,status(a0)
 	bclr	#status.player.pushing,status(a0)
 	bclr	#status.player.rolljumping,status(a0)
+	move.b	#0,(Sonic_doublejump).w
 	move.b	#0,jumping(a0)
 	move.w	#0,(Chain_Bonus_counter).w
 	move.b	#0,flip_angle(a0)
@@ -38358,6 +38374,7 @@ SonAni_Balance4_ptr:		offsetTableEntry.w SonAni_Balance4	; 30 ; $1E
 SupSonAni_Transform_ptr:	offsetTableEntry.w SupSonAni_Transform	; 31 ; $1F
 SonAni_Lying_ptr:		offsetTableEntry.w SonAni_Lying		; 32 ; $20
 SonAni_LieDown_ptr:		offsetTableEntry.w SonAni_LieDown	; 33 ; $21
+SonAni_InstaShield_ptr:		offsetTableEntry.w SonAni_InstaShield	; 34 ; $22
 
 SonAni_Walk:	dc.b $FF, $F,$10,$11,$12,$13,$14, $D, $E,$FF
 	rev02even
@@ -38434,6 +38451,8 @@ SonAni_Balance4:dc.b   3,$CF,$C8,$C9,$CA,$CB,$FE,  4
 SonAni_Lying:	dc.b   9,  8,  9,$FF
 	rev02even
 SonAni_LieDown:	dc.b   3,  7,$FD,  0
+	rev02even
+SonAni_InstaShield:	dc.b   1, $D6, $D7 ,$D6, $D7, $D6, $D7 ,$D6, $D7, $FD,  2
 	even
 
 ; ---------------------------------------------------------------------------
@@ -40087,6 +40106,7 @@ Tails_Jump:
 	add.w	d0,y_vel(a0)	; make Tails jump (in Y)
 	bset	#status.player.in_air,status(a0)
 	bclr	#status.player.pushing,status(a0)
+	move.b	#0,(Tails_doublejump).w		;tails doublejump
 	addq.l	#4,sp
 	move.b	#1,jumping(a0)
 	clr.b	stick_to_convex(a0)
@@ -77905,10 +77925,10 @@ ObjB0_Init:
 	rts
 ; ===========================================================================
 off_3A294:
-	dc.l MapRUnc_Sonic.frame45
-	dc.l MapRUnc_Sonic.frame46
-	dc.l MapRUnc_Sonic.frame47
-	dc.l MapRUnc_Sonic.frame48
+	dc.l DPLC_3e9b_45		;edited the original sonic mappings, change the labels for sega screen
+	dc.l DPLC_3e9b_46
+	dc.l DPLC_3e9b_47
+	dc.l DPLC_3e9b_48
 
 map_piece macro width,height
 	dc.l copysrc,copydst
@@ -84544,6 +84564,25 @@ TouchResponse:
 +
 	tst.b	(Current_Boss_ID).w
 	bne.w	Touch_Boss
+		; By this point, we're focusing purely on the Insta-Shield
+		cmpi.b	#AniIDSonAni_InstaShield,anim(a0)		; Is the Insta-Shield currently in its 'attacking' mode?
+		bne.s	Touch_NoInstaShield			; If not, branch
+		move.w	x_pos(a0),d2				; Get player's x_pos
+		move.w	y_pos(a0),d3				; Get player's y_pos
+		subi.w	#$18,d2					; Subtract width of Insta-Shield
+		subi.w	#$18,d3					; Subtract height of Insta-Shield
+		move.w	#$30,d4					; Player's width
+		move.w	#$30,d5					; Player's height
+		bsr.s	Touch_SkipRadiusChanges
+		;move.w	(sp)+,d0				; Get the backed-up status_secondary
+		;btst	#Status_Invincible,d0			; Was the player already invincible (wait, what? An earlier check ensures that this can't happen)
+		;bne.s	.alreadyinvincible			; If so, branch
+		;bclr	#Status_Invincible,status_secondary(a0)	; Make the player vulnerable again
+
+	.alreadyinvincible:
+		moveq	#0,d0
+		rts
+Touch_NoInstaShield:
 	move.w	x_pos(a0),d2 ; load Sonic's position into d2,d3
 	move.w	y_pos(a0),d3
 	subi_.w	#8,d2
@@ -84566,6 +84605,7 @@ TouchResponse:
 Touch_NoDuck:
 	move.w	#$10,d4
 	add.w	d5,d5
+Touch_SkipRadiusChanges:
 	lea	(Dynamic_Object_RAM).w,a1
 	move.w	#(Dynamic_Object_RAM_End-Dynamic_Object_RAM)/object_size-1,d6
 ; loc_3F5A0:
@@ -84687,6 +84727,26 @@ Touch_Sizes:
 ; loc_3F666:
 Touch_Boss:
 	lea	Touch_Sizes(pc),a3
+		; By this point, we're focusing purely on the Insta-Shield
+		cmpi.b	#AniIDSonAni_InstaShield,anim(a0)		; Is the Insta-Shield currently in its 'attacking' mode?
+		bne.s	Touch_BossNoInstaShield			; If not, branch
+		move.w	x_pos(a0),d2				; Get player's x_pos
+		move.w	y_pos(a0),d3				; Get player's y_pos
+		subi.w	#$18,d2					; Subtract width of Insta-Shield
+		subi.w	#$18,d3					; Subtract height of Insta-Shield
+		move.w	#$30,d4					; Player's width
+		move.w	#$30,d5					; Player's height
+		bsr.s	Touch_BossSkipRadiusChanges				;originally Touch_Process
+		;move.w	(sp)+,d0				; Get the backed-up status_secondary
+		;btst	#Status_Invincible,d0			; Was the player already invincible (wait, what? An earlier check ensures that this can't happen)
+		;bne.s	.alreadyinvincible			; If so, branch
+		;bclr	#Status_Invincible,status_secondary(a0)	; Make the player vulnerable again
+
+	.alreadyinvincible:
+		moveq	#0,d0
+		rts
+
+Touch_BossNoInstaShield:
 	move.w	x_pos(a0),d2
 	move.w	y_pos(a0),d3
 	subi_.w	#8,d2
@@ -84696,19 +84756,20 @@ Touch_Boss:
 	sub.w	d5,d3
     if fixBugs
 	cmpi.b	#AniIDSonAni_Duck,anim(a0)	; is Sonic ducking?
-	bne.s	+				; if not, branch
+	bne.s	Touch_BossNoDuck				; if not, branch
     else
 	; This logic only works for Sonic, not Tails. Also, it only applies
 	; to the last frame of his ducking animation. This is a leftover from
 	; Sonic 1, where Sonic's ducking animation only had one frame.
 	cmpi.b	#$4D,mapping_frame(a0)	; is Sonic ducking?
-	bne.s	+			; if not, branch
+	bne.s	Touch_BossNoDuck			; if not, branch
     endif
 	addi.w	#$C,d3
 	moveq	#$A,d5
-+
+Touch_BossNoDuck:
 	move.w	#$10,d4
 	add.w	d5,d5
+Touch_BossSkipRadiusChanges:
 	lea	(Dynamic_Object_RAM).w,a1
 	move.w	#(Dynamic_Object_RAM_End-Dynamic_Object_RAM)/object_size-1,d6
 ; loc_3F69C:
@@ -84825,12 +84886,16 @@ Touch_Monitor:
 ; loc_3F768:
 .breakMonitor:
 	cmpa.w	#MainCharacter,a0
-	beq.s	+
+	beq.s	.skip2p
 	tst.w	(Two_player_mode).w
 	beq.s	return_3F78A
-+
+.skip2p:
 	cmpi.b	#AniIDSonAni_Roll,anim(a0)
-	bne.s	return_3F78A
+	beq.s	.monitorhit
+	cmpi.b	#AniIDSonAni_InstaShield,anim(a0)	;is sonic instashield? if yes, break
+	beq.s	.monitorhit
+	bra.s	return_3F78A	;if neither, than do nothing
+.monitorhit:
 	neg.w	y_vel(a0)	; reverse Sonic's y-motion
 	move.b	#4,routine(a1)
 	move.w	a0,parent(a1)
@@ -84844,6 +84909,8 @@ Touch_Enemy:
 	bne.s	+			; if yes, branch
 	cmpi.b	#AniIDSonAni_Spindash,anim(a0)
 	beq.s	+
+	cmpi.b	#AniIDSonAni_InstaShield,anim(a0)	; is Sonic insta shield?
+	beq.s	+		; if yes, branch
 	cmpi.b	#AniIDSonAni_Roll,anim(a0)		; is Sonic rolling?
 	bne.w	Touch_ChkHurt		; if not, branch
 +
@@ -84940,6 +85007,8 @@ loc_3F85C:
 
 ; loc_3F862:
 Touch_ChkHurt:
+	cmpi.b	#AniIDSonAni_InstaShield,anim(a0)	; is Sonic insta shield?
+	beq.s	Touch_NoHurt		; if yes, branch
 	btst	#status_secondary.invincible,status_secondary(a0)	; is Sonic invincible?
 	beq.s	Touch_Hurt		; if not, branch
 ; loc_3F86A:
@@ -91399,6 +91468,8 @@ CheckIfDies:
 	beq.s	PlayerDontKill		; if yes, branch
 	btst	#status_secondary.invincible,(MainCharacter+status_secondary).w	; is Sonic invincible?
 	bne.s	PlayerDontKill			; if yes, branch
+		cmpi.b	#AniIDSonAni_InstaShield,(MainCharacter+anim).w	;is Sonic instashield
+		beq.w	PlayerDontKill	;if yes, don't
 	btst	#0,(MainCharacter+obj_control).w	; is Sonic interacting with another object that holds him in place or controls his movement somehow?
 	bne.s	CloneSafeInteractObj			; if yes, branch to give clone timer to not hurt sonic
 	tst.w	invincibility_time(a0)		;is the clone have invunerable time? (disable damage)
@@ -91477,6 +91548,13 @@ Tails_StartFlying:
 		move.b	#0,(Tails_doublejump).w
 		rts
 	.flying:
+		move.b	(Level_frame_counter+1).w,d0
+		addq.b	#8,d0
+		andi.b	#$F,d0
+		bne.s	.skipsound
+	move.w	#SndID_PreArrowFiring,d0
+	jsr	(PlaySound).l
+.skipsound:
 		cmpi.b	#1,(Tails_doublejump).w
 		bne.s	FlyP1
 		move.b	(Ctrl_2_Held_Logical+1).w,d0
@@ -91529,6 +91607,25 @@ FlyP3:
 		rts
 ; End of function Tails_StartFlying
 
+;custom "instashield" for sonic
+
+Sonic_InstaShield:
+		cmpi.b	#1,(Sonic_doublejump).w	;already did it?
+		beq.w	rts_SonicInstaShield	;if yes, don't
+		btst	#2,status(a0)		; sonic is rolling?
+		beq.w	rts_SonicInstaShield		;if not, don't do move
+		move.b	(Ctrl_1_Press_Logical).w,d0
+		andi.b	#button_B_mask|button_C_mask|button_A_mask,d0 ; is A, B or C pressed?
+		beq.s	rts_SonicInstaShield		;if not, don't do move
+		move.b	#1,(Sonic_doublejump).w
+		move.b	#AniIDSonAni_InstaShield,anim(a0)
+	move.b	#SndID_SpikeSwitch,d0 ; play the spike switch sound
+	jsr	PlaySound
+rts_SonicInstaShield:
+		cmpi.b	#AniIDSonAni_Roll,anim(a0)	;just roll?
+		bne.w	.end	;if not, don't
+	.end:
+		rts
 ; ===========================================================================
 	if padToPowerOfTwo && (*-StartOfRom)&(*-StartOfRom-1)
 		cnop	-1,2<<lastbit(*-StartOfRom-1)
