@@ -39356,6 +39356,13 @@ Obj02_MdJump:
                 movem.l A4-A6, -(A7)
                 bsr     Tails_DoLevelCollision                           ; Offset_0x00E5F0
                 movem.l (A7)+, A4-A6
+                cmpi.w  #$0000, (Player_mode).w             ; sonic and tails game?
+                bne.s   .dontflysonic
+		lea	objoff_30(a0),a2
+		lea	(MainCharacter).w,a1 ; a1=character
+		move.w	(Ctrl_1).w,d0
+		jsr	Tails_CarrySonic
+.dontflysonic:
 		rts
 ; End of subroutine Obj02_MdJump
 
@@ -91624,6 +91631,59 @@ Sonic_InstaShield:
 	jsr	PlaySound
 rts_SonicInstaShield:
 		rts
+
+Tails_CarrySonic:	;code copied from obj7F, one of vines in mystic cave zone
+	tst.b	2(a2)
+	beq.s	+
+	subq.b	#1,2(a2)
+	bne.w	.end
++
+	move.w	x_pos(a1),d0
+	sub.w	x_pos(a0),d0
+	addi.w	#$C,d0
+	cmpi.w	#$18,d0
+	bhs.w	.end
+	move.w	y_pos(a1),d1
+	sub.w	y_pos(a0),d1
+	subi.w	#$19,d1		;28
+	cmpi.w	#$D,d1		;10
+	bhs.w	.end
+	tst.b	obj_control(a1)
+	bmi.s	.end
+	cmpi.b	#4,routine(a1)
+	bhs.s	.end
+	tst.w	(Debug_placement_mode).w
+	bne.s	.end
+	;face left or right
+	btst	#0,status(a0)		;tails facing left?
+	bne.s	.notleft		;if not, don't face left
+	bclr	#0,status(a1)		;try to copy facing left/right
+	bra.s	.afterdirections
+.notleft:
+	bset	#0,status(a1)		;try to copy facing left/right
+.afterdirections:
+	;be airborne
+	btst	#1,status(a0)		;tails in the air?
+	bne.s	.notairborne		;if not, don't be airborne
+	bclr	#1,status(a1)		;try to copy being in the air
+	bra.s	.afteraircheck
+.notairborne:
+	bset	#1,status(a1)		;try to copy being in the air
+.afteraircheck:
+	clr.w	x_vel(a1)
+	clr.w	y_vel(a1)
+	clr.w	inertia(a1)
+	move.w	x_pos(a0),x_pos(a1)
+	move.w	y_pos(a0),y_pos(a1)
+	move.w	x_vel(a0),x_vel(a1)	;velocity
+	move.w	y_vel(a0),y_vel(a1)
+	addi.w	#$1D,y_pos(a1)	;30		; the 3 numbers edited here may be where on y axis tails should hold sonic
+	move.b	#AniIDSonAni_Hang2,anim(a1)
+	;move.b	#1,obj_control(a1)		;can freeze sonic, disable as it's too easy to lock him in air
+	;move.b	#1,(a2)				;makes tails invulnerable, also disable
+.end:
+		rts
+
 ; ===========================================================================
 	if padToPowerOfTwo && (*-StartOfRom)&(*-StartOfRom-1)
 		cnop	-1,2<<lastbit(*-StartOfRom-1)
