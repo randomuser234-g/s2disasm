@@ -21,6 +21,7 @@ To control, there are 2 different modes
 hold A for gradual flight
 mash B/C for quick "bursts"
 can carry sonic with second controller
+or using UP + A/B/C in the air, being caught and using the P1 D-pad
 
 -instashield
 (A/B/C) in the air for the move
