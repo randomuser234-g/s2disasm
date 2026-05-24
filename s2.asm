@@ -38584,11 +38584,14 @@ return_1B89A:
 Obj02:
 	; a0=character
 	cmpi.w	#2,(Player_mode).w
-	bne.s	+
+	bne.s	Obj02_Normal
 	move.w	(Camera_Min_X_pos).w,(Tails_Min_X_pos).w
 	move.w	(Camera_Max_X_pos).w,(Tails_Max_X_pos).w
 	move.w	(Camera_Max_Y_pos).w,(Tails_Max_Y_pos).w
-+
+	tst.w	(Debug_placement_mode).w	; is debug mode being used?
+	beq.s	Obj02_Normal			; if not, branch
+	jmp	(DebugMode).l
+Obj02_Normal:
 	moveq	#0,d0
 	move.b	routine(a0),d0
 	move.w	Obj02_Index(pc,d0.w),d1
@@ -38660,6 +38663,14 @@ Obj02_Init_Continued:
 Obj02_Control:
 	cmpa.w	#MainCharacter,a0
 	bne.s	Obj02_Control_Joypad2
+	tst.w	(Debug_mode_flag).w	; is debug cheat enabled?
+	beq.s	.nodebug		; if not, branch
+	btst	#button_B,(Ctrl_1_Press).w	; is button B pressed?
+	beq.s	.nodebug			; if not, branch
+	move.w	#1,(Debug_placement_mode).w	; change Sonic into a ring/item
+	clr.b	(Control_Locked).w		; unlock control
+	rts
+.nodebug:
 	move.w	(Ctrl_1_Logical).w,(Ctrl_2_Logical).w
 	tst.b	(Control_Locked).w	; are controls locked?
 	bne.s	Obj02_Control_Part2	; if yes, branch
@@ -78550,6 +78561,12 @@ ObjB2_Main_WFZ_Start_fall_down:
 ; loc_3A954:
 ObjB2_Main_WFZ_End:
 	bsr.w	ObjB2_Animate_Pilot
+	tst.b	(Update_HUD_timer).w	; has Sonic/Tails reached the end of the act?
+	bne.s	.skipdeathcheck		; if no, continue with cutscene
+	cmpi.w	#$7EF,(MainCharacter+y_pos).w	;did Sonic fall critically low?
+	blo.s	.skipdeathcheck	; if yes, start Death Egg Zone anyway
+	bra.w	ObjB2_Start_DEZ
+.skipdeathcheck:
 	moveq	#0,d0
 	move.b	routine_secondary(a0),d0
 	move.w	ObjB2_Main_WFZ_states(pc,d0.w),d1
@@ -78572,7 +78589,7 @@ ObjB2_Main_WFZ_states:	offsetTable
 ; loc_3A982:
 ObjB2_Wait_Leader_position:
 	lea	(MainCharacter).w,a1 ; a1=character
-	cmpi.w	#$5EC,y_pos(a1)
+	cmpi.w	#$54C,y_pos(a1)
 	blo.s	+	; rts
 	clr.w	(Ctrl_1_Logical).w
 	clr.b	(Update_HUD_timer).w		;stop the timer once Sonic has fallen down here
@@ -88272,12 +88289,8 @@ Debug_ExitDebugMode:
 	; Exit debug mode
 	moveq	#0,d0
 	move.w	d0,(Debug_placement_mode).w
-	lea	(MainCharacter).w,a1 ; a1=character
-	move.l	#MapUnc_Sonic,mappings(a1)
-	move.w	#make_art_tile(ArtTile_ArtUnc_Sonic,0,0),art_tile(a1)
-	tst.w	(Two_player_mode).w
-	beq.s	.notTwoPlayerMode
-	move.w	#make_art_tile_2p(ArtTile_ArtUnc_Sonic,0,0),art_tile(a1)
+	bsr.s	.charcheckdebug
+	;moved around checks
 ; loc_41C82:
 .notTwoPlayerMode:
 	bsr.s	Debug_ResetPlayerStats
@@ -88291,6 +88304,28 @@ Debug_ExitDebugMode:
 	move.b	#AniIDSonAni_Roll,(MainCharacter+anim).w
 	bset	#status.player.rolling,(MainCharacter+status).w
 	bset	#status.player.in_air,(MainCharacter+status).w
+	rts
+.charcheckdebug:
+		cmpi.w	#2,(Player_mode).w	; is the multiple character flag set to 2 (Tails)?
+		beq.s	.tailsmap		; if yes, load Tails' mappings
+						;otherwise it load sonic
+
+	.sonicssmap:
+		move.l	#MapUnc_Sonic,(MainCharacter+mappings).w
+		move.w	#make_art_tile(ArtTile_ArtUnc_Sonic,0,0),(MainCharacter+art_tile).w
+		tst.w	(Two_player_mode).w
+		beq.s	.backtonormalcontinued
+		move.w	#make_art_tile_2p(ArtTile_ArtUnc_Sonic,0,0),(MainCharacter+art_tile).w
+		bra.s	.backtonormalcontinued		; branch to rest of code
+
+	.tailsmap:
+		move.l	#MapUnc_Tails,(MainCharacter+mappings).w
+		move.w	#make_art_tile(ArtTile_ArtUnc_Tails,0,0),(MainCharacter+art_tile).w
+		tst.w	(Two_player_mode).w
+		beq.s	.backtonormalcontinued
+		move.w	#make_art_tile_2p(ArtTile_ArtUnc_Tails,0,0),(MainCharacter+art_tile).w
+	.backtonormalcontinued:
+				rts
 
 return_41CB6:
 	rts
@@ -91554,6 +91589,10 @@ CloneSafeInteractObj:
 ;Subroutine to let Tails fly ala Sonic 3 (prototype)
 ; ===========================================================================
 Tails_Flight:
+	tst.w	(Demo_mode_flag).w	; is demo mode on?
+	bne.w	rts_TailsFlight		; if yes, no move
+	tst.b	(Update_HUD_timer).w	; has Tails reached the end of the act?
+	beq.s	rts_TailsFlight		; if yes, don't fly
 		btst	#2,status(a0)		; tails is rolling?
 		beq.w	rts_TailsFlight		;if not, don't fly
 		move.b	(Ctrl_2_Press_Logical).w,d0
@@ -91592,6 +91631,8 @@ rts_TailsFlight:
 ; End of function Tails_Flight
 ;---------------------------------------------------------------------------------------------------------
 Tails_StartFlying:
+	tst.b	(Update_HUD_timer).w	; has Tails reached the end of the act?
+	beq.s	.noflying		; if yes, don't fly
 		cmpi.b	#AniIDTailsAni_Fly,anim(a0)	;is tails in flying animation?
 		bne.s	.noflying		;if not, don't fly
 		bra.s	.flying			;otherwise fly
@@ -91609,7 +91650,7 @@ Tails_StartFlying:
 .skipsound:
 		cmpi.b	#1,(Tails_doublejump).w
 		bne.s	FlyP1
-		move.b	(Ctrl_2_Held_Logical+1).w,d0
+		move.b	(Ctrl_2_Press_Logical).w,d0
 		andi.b	#button_B_mask|button_C_mask,d0		;$30?
 		beq.s	Tails_Speed1
 		subi.w	#$40,y_vel(a0)
@@ -91636,7 +91677,7 @@ Fly_DoNothing:
 
 ;Offset_0x00DC3E:
 FlyP1:
-		move.b	(Ctrl_2_Held_Logical+1).w,d0
+		move.b	(Ctrl_2_Press_Logical).w,d0
 		andi.b	#button_B_mask|button_C_mask,d0
 		beq.s	FlyP2
 		tst.w	y_vel(a0)
@@ -91662,6 +91703,8 @@ FlyP3:
 ;custom "instashield" for sonic
 
 Sonic_InstaShield:
+	tst.w	(Demo_mode_flag).w	; is demo mode on?
+	bne.w	rts_SonicInstaShield	; if yes, no move
 		cmpi.b	#1,(Sonic_doublejump).w	;already did it?
 		beq.w	rts_SonicInstaShield	;if yes, don't
 		btst	#2,status(a0)		; sonic is rolling?
