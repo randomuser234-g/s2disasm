@@ -51,6 +51,8 @@ useFullWaterTables = 0
 ;	| Set to 1 if you've shifted level IDs around or you want water in levels with a level slot below 8
 debugbuild = 0
 ;	| If 1, level select and debug instantly enabled on the title screen
+yourpast = 1
+;	| If 1,shield is disabled and clone sonic will appear
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; AS-specific macros and assembler settings
@@ -5206,8 +5208,13 @@ InitPlayers:
 	addi_.w	#4,(Sidekick+y_pos).w
 	move.b	#ObjID_SpindashDust,(Tails_Dust+id).w ; load Obj08 Tails' spindash dust/splash object at $FFFFD140
 +
+    if yourpast
 	move.b	#ObjID_CloneSonic,(Sonic_Shield+id).w ; load ObjBB clone Sonic object at shield
+    else
+	nop
+    endif
 	rts
+
 ; ===========================================================================
 ; loc_44BE:
 InitPlayers_Alone: ; either Sonic or Tails but not both
@@ -5216,7 +5223,11 @@ InitPlayers_Alone: ; either Sonic or Tails but not both
 
 	move.b	#ObjID_Sonic,(MainCharacter+id).w ; load Obj01 Sonic object at $FFFFB000
 	move.b	#ObjID_SpindashDust,(Sonic_Dust+id).w ; load Obj08 Sonic's spindash dust/splash object at $FFFFD100
+    if yourpast
 	move.b	#ObjID_CloneSonic,(Sonic_Shield+id).w ; load ObjBB clone Sonic object at shield
+    else
+	nop
+    endif
 	rts
 ; ===========================================================================
 ; loc_44D0:
@@ -5224,7 +5235,11 @@ InitPlayers_TailsAlone:
 	move.b	#ObjID_Tails,(MainCharacter+id).w ; load Obj02 Tails object at $FFFFB000
 	move.b	#ObjID_SpindashDust,(Tails_Dust+id).w ; load Obj08 Tails' spindash dust/splash object at $FFFFD100
 	addi_.w	#4,(MainCharacter+y_pos).w
+    if yourpast
 	move.b	#ObjID_CloneSonic,(Tails_Shield+id).w ; load ObjBB clone Sonic object at shield
+    else
+	nop
+    endif
 	rts
 ; End of function InitPlayers
 
@@ -25793,10 +25808,25 @@ super_shoes_Tails:
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Shield Monitor
-; doesn't actually give shield but do invincible instead
+; gives the player a shield that absorbs one hit
 ; ---------------------------------------------------------------------------
 shield_monitor:
-	jmp	invincible_monitor	;
+    if yourpast
+	jmp	invincible_monitor	;doesn't actually give shield but do invincible instead
+    else
+	addq.w	#1,(a2)
+	bset	#status_secondary.shield,status_secondary(a1)	; give shield status
+	move.w	#SndID_Shield,d0
+	jsr	(PlayMusic).l
+	tst.b	parent+1(a0)
+	bne.s	+
+	move.b	#ObjID_Shield,(Sonic_Shield+id).w ; load Obj38 (shield) at $FFFFD180
+	move.w	a1,(Sonic_Shield+parent).w
+	rts
+    
+
+
+	endif
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Invincibility Monitor
@@ -38985,6 +39015,15 @@ TailsCPU_Normal_SonicOK:
 
 ; Tails wants to go left because that's where Sonic is
 ; loc_1BD76: TailsCPU_Normal_FollowLeft:
+
+	tst.b	(Tails_carrying_Sonic).w                   ; is tails flying?
+        beq.s   .dontflysonic				;if not, don't do this
+	btst	#button_left,(Ctrl_1_Held_Logical).w	; is left being pressed?
+	beq.s	+
+	andi.w	#~(((button_left_mask|button_right_mask)<<8)|(button_left_mask|button_right_mask)),d1	; AND out Sonic's left/right input...
+	ori.w	#(button_left_mask<<8)|button_left_mask,d1	; ...and give Tails his own
+	bra.s	+
+.dontflysonic:
 	cmpi.w	#$10,d2
 	blo.s	+
 	andi.w	#~(((button_left_mask|button_right_mask)<<8)|(button_left_mask|button_right_mask)),d1	; AND out Sonic's left/right input...
@@ -39000,6 +39039,15 @@ TailsCPU_Normal_SonicOK:
 ; Tails wants to go right because that's where Sonic is
 ; loc_1BD98:
 TailsCPU_Normal_FollowRight:
+
+	tst.b	(Tails_carrying_Sonic).w                   ; is tails flying?
+        beq.s   .dontflysonic				;if not, don't do this
+	btst	#button_right,(Ctrl_1_Held_Logical).w	; is left being pressed?
+	beq.s	+
+	andi.w	#~(((button_left_mask|button_right_mask)<<8)|(button_left_mask|button_right_mask)),d1	; AND out Sonic's left/right input
+	ori.w	#(button_right_mask<<8)|button_right_mask,d1	; ...and give Tails his own
+	bra.s	+
+.dontflysonic:
 	cmpi.w	#$10,d2
 	blo.s	+
 	andi.w	#~(((button_left_mask|button_right_mask)<<8)|(button_left_mask|button_right_mask)),d1	; AND out Sonic's left/right input
@@ -39358,11 +39406,15 @@ Obj02_MdJump:
                 movem.l (A7)+, A4-A6
                 cmpi.w  #$0000, (Player_mode).w             ; sonic and tails game?
                 bne.s   .dontflysonic
-		lea	objoff_30(a0),a2
 		lea	(MainCharacter).w,a1 ; a1=character
 		move.w	(Ctrl_1).w,d0
 		jsr	Tails_CarrySonic
+	.end:
+		rts
 .dontflysonic:
+	btst	#button_down,(Ctrl_1_Held_Logical).w	; is left being pressed?
+	beq.s	.end			; if not, branch
+	move.b	#AniIDSonAni_Roll,anim(a0)
 		rts
 ; End of subroutine Obj02_MdJump
 
@@ -91507,8 +91559,11 @@ Tails_Flight:
 		move.b	(Ctrl_2_Press_Logical).w,d0
 		andi.b	#button_B_mask|button_C_mask|button_A_mask,d0 ; is A, B or C pressed?
 		beq.s	rts_TailsFlight		;if not, don't fly
+		btst	#button_up,(Ctrl_1_Held_Logical).w	; is up being pressed?
+		bne.s	.skipcpucheck			; if yes, branch
 		tst.w	(Tails_control_counter).w	; if CPU has control
 		beq.s	rts_TailsFlight		;if yes, don't fly
+.skipcpucheck:
 		; we already checked this earlier...
 		;btst	#2,status(a0)
 		;beq.s	Offset_0x00E382
@@ -91542,6 +91597,7 @@ Tails_StartFlying:
 		bra.s	.flying			;otherwise fly
 	.noflying:
 		move.b	#0,(Tails_doublejump).w
+		move.b	#0,(Tails_carrying_Sonic).w
 		rts
 	.flying:
 		move.b	(Level_frame_counter+1).w,d0
@@ -91633,27 +91689,22 @@ rts_SonicInstaShield:
 		rts
 
 Tails_CarrySonic:	;code copied from obj7F, one of vines in mystic cave zone
-	tst.b	2(a2)
-	beq.s	+
-	subq.b	#1,2(a2)
-	bne.w	.end
-+
 	move.w	x_pos(a1),d0
 	sub.w	x_pos(a0),d0
 	addi.w	#$C,d0
 	cmpi.w	#$18,d0
-	bhs.w	.end
+	bhs.w	.stopcarryingsonic
 	move.w	y_pos(a1),d1
 	sub.w	y_pos(a0),d1
 	subi.w	#$19,d1		;28
 	cmpi.w	#$D,d1		;10
-	bhs.w	.end
+	bhs.w	.stopcarryingsonic
 	tst.b	obj_control(a1)
-	bmi.s	.end
+	bmi.w	.stopcarryingsonic
 	cmpi.b	#4,routine(a1)
-	bhs.s	.end
+	bhs.w	.stopcarryingsonic
 	tst.w	(Debug_placement_mode).w
-	bne.s	.end
+	bne.w	.stopcarryingsonic
 	;face left or right
 	btst	#0,status(a0)		;tails facing left?
 	bne.s	.notleft		;if not, don't face left
@@ -91679,8 +91730,14 @@ Tails_CarrySonic:	;code copied from obj7F, one of vines in mystic cave zone
 	move.w	y_vel(a0),y_vel(a1)
 	addi.w	#$1D,y_pos(a1)	;30		; the 3 numbers edited here may be where on y axis tails should hold sonic
 	move.b	#AniIDSonAni_Hang2,anim(a1)
-	;move.b	#1,obj_control(a1)		;can freeze sonic, disable as it's too easy to lock him in air
-	;move.b	#1,(a2)				;makes tails invulnerable, also disable
+	move.b	#1,(Tails_carrying_Sonic).w
+	btst	#button_down,(Ctrl_1_Held_Logical).w	; is down being pressed?
+	beq.s	.end			; if not, branch
+	move.b	#AniIDSonAni_Roll,anim(a1)
+	move.b	#AniIDSonAni_Roll,anim(a0)
+.stopcarryingsonic:
+	move.b	#0,(Tails_carrying_Sonic).w
+		rts
 .end:
 		rts
 

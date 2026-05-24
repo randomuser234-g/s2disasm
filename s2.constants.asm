@@ -1484,7 +1484,8 @@ Plc_Buffer_End:
 
 
 Misc_Variables:
-				ds.w	1	; unused
+Tails_carrying_Sonic:		ds.b	1	; check when being airlifted
+				ds.b	1	; unused
 
 ; extra variables for the second player (CPU) in 1-player mode
 Tails_control_counter:		ds.w	1	; how long until the CPU takes control
