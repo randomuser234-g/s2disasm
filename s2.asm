@@ -38511,6 +38511,7 @@ SuperSonicAniData: offsetTable
 	offsetTableEntry.w SonAni_Balance3	; 29 ; $1D
 	offsetTableEntry.w SonAni_Balance4	; 30 ; $1E
 	offsetTableEntry.w SupSonAni_Transform	; 31 ; $1F
+	offsetTableEntry.w SonAni_InstaShield	; 32 ; $20
 
 SupSonAni_Walk:		dc.b $FF,$77,$78,$79,$7A,$7B,$7C,$75,$76,$FF
 	rev02even
@@ -39394,6 +39395,7 @@ Obj02_MdRoll:
 Obj02_MdJump:
         tst.b   (Tails_doublejump).w                  
         bne.s   .flying
+	move.b	#0,(Tails_carrying_Sonic).w	;dont hold sonic
 
 	bsr.w	Tails_JumpHeight
 	bsr.w	Tails_ChgJumpDir
@@ -39420,10 +39422,12 @@ Obj02_MdJump:
 		lea	(MainCharacter).w,a1 ; a1=character
 		move.w	(Ctrl_1).w,d0
 		jsr	Tails_CarrySonic
+	tst.w	(Tails_control_counter).w	; if CPU has control
+	bne.w	.dontflysonic		; (if not, branch)
 	.end:
 		rts
 .dontflysonic:
-	btst	#button_down,(Ctrl_1_Held_Logical).w	; is left being pressed?
+	btst	#button_down,(Ctrl_2_Held_Logical).w	; is left being pressed?
 	beq.s	.end			; if not, branch
 	move.b	#AniIDSonAni_Roll,anim(a0)
 		rts
@@ -49049,6 +49053,8 @@ Obj32_SupportingSomeone:
 	bne.s	Obj32_SupportingOnePlayerOnly	; if not, branch
 	cmpi.b	#AniIDSonAni_Roll,breakableblock_mainchar_anim(a0)
 	beq.s	+
+	cmpi.b	#AniIDSonAni_InstaShield,breakableblock_mainchar_anim(a0)		; is Sonic instashield?
+	beq.w	+	; if yes, branch
 	cmpi.b	#AniIDSonAni_Roll,breakableblock_sidekick_anim(a0)
 	bne.s	BranchTo2_JmpTo9_MarkObjGone
 +
@@ -49066,7 +49072,11 @@ Obj32_SupportingOnePlayerOnly:
 	andi.b	#p1_standing,d1			 ; is the main character standing on the object?
 	beq.s	Obj32_SupportingSidekick ; if not, branch
 	cmpi.b	#AniIDSonAni_Roll,breakableblock_mainchar_anim(a0)
-	bne.s	BranchTo2_JmpTo9_MarkObjGone
+	beq.s	.success
+	cmpi.b	#AniIDSonAni_InstaShield,breakableblock_mainchar_anim(a0)
+	beq.s	.success
+	bra.s	BranchTo2_JmpTo9_MarkObjGone
+.success:
 	lea	(MainCharacter).w,a1 ; a1=character
 	bsr.s	Obj32_BouncePlayer
 	bra.s	Obj32_Destroy
@@ -49074,6 +49084,8 @@ Obj32_SupportingOnePlayerOnly:
 ; loc_23602:
 Obj32_SetCharacterOffBlock:
 	cmpi.b	#AniIDSonAni_Roll,d0
+	bne.s	+
+	cmpi.b	#AniIDSonAni_InstaShield,d0
 	bne.s	+
 ; loc_23608:
 Obj32_BouncePlayer:
