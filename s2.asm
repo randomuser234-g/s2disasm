@@ -91362,8 +91362,8 @@ SndPtr_Blip:		rom_ptr_z80	Sound4D	; selection blip
 SndPtr_RingLeft:	rom_ptr_z80	Sound4E	; another ring sound (only plays in the left speaker?)
 SndPtr_Signpost:	rom_ptr_z80	Sound4F	; signpost spin sound
 SndPtr_CNZBossZap:	rom_ptr_z80	Sound50	; mosquito zapper
-			rom_ptr_z80	Sound51	; (unused)
-			rom_ptr_z80	Sound52	; (unused)
+SndPtr_Flying:		rom_ptr_z80	Sound51	; (unused)
+SndPtr_FlyingTired:	rom_ptr_z80	Sound52	; (unused)
 SndPtr_Signpost2P:	rom_ptr_z80	Sound53
 SndPtr_OOZLidPop:	rom_ptr_z80	Sound54	; OOZ lid pop sound
 SndPtr_SlidingSpike:	rom_ptr_z80	Sound55
@@ -91447,8 +91447,8 @@ Sound4D:	include "sound/sfx/CD - Switch.asm"
 Sound4E:	include "sound/sfx/CE - Ring Left Speaker.asm"
 Sound4F:	include "sound/sfx/CF - Signpost.asm"
 Sound50:	include "sound/sfx/D0 - CNZ Boss Zap.asm"
-Sound51:	include "sound/sfx/D1 - Unknown (Unused).asm"
-Sound52:	include "sound/sfx/D2 - Unknown (Unused).asm"
+Sound51:	include "sound/sfx/D1 - Flying.asm"
+Sound52:	include "sound/sfx/D2 - Flying (Tired).asm"
 Sound53:	include "sound/sfx/D3 - Signpost 2P.asm"
 Sound54:	include "sound/sfx/D4 - OOZ Lid Pop.asm"
 Sound55:	include "sound/sfx/D5 - Sliding Spike.asm"
@@ -91657,7 +91657,7 @@ Tails_StartFlying:
 		addq.b	#8,d0
 		andi.b	#$F,d0
 		bne.s	.skipsound
-	move.w	#SndID_PreArrowFiring,d0
+	move.w	#SndID_Flying,d0
 	jsr	(PlaySound).l
 .skipsound:
 		cmpi.b	#1,(Tails_doublejump).w
