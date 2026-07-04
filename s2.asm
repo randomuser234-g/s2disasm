@@ -25823,9 +25823,11 @@ shield_monitor:
 	move.b	#ObjID_Shield,(Sonic_Shield+id).w ; load Obj38 (shield) at $FFFFD180
 	move.w	a1,(Sonic_Shield+parent).w
 	rts
-    
-
-
+    ; ---------------------------------------------------------------------------
++	; give shield to sidekick
+	move.b	#ObjID_Shield,(Tails_Shield+id).w ; load Obj38 (shield) at $FFFFD1C0
+	move.w	a1,(Tails_Shield+parent).w
+	rts
 	endif
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
