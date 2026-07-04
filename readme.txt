@@ -35,6 +35,8 @@ or using UP + A/B/C in the air, being caught and using the P1 D-pad
 
 -No roll jump lock
 
+-skip the score screen end of act by pressing A/B/C
+
 known issues:
 
 the clone sonic's palette can look off
