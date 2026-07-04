@@ -6813,7 +6813,7 @@ SpecialStage:
 	clr.w	(Total_Bonus_Countdown).w
 	tst.b	(Got_Emerald).w
 	beq.s	+
-	move.w	#1000,(Total_Bonus_Countdown).w
+	move.w	#1000,(Total_Bonus_Countdown).w			;gems bonus
 +
 	move.b	#1,(Update_HUD_score).w
 	move.b	#1,(Update_Bonus_score).w
@@ -27759,6 +27759,19 @@ loc_141AA:
 	bsr.w	DisplaySprite
 	move.b	#1,(Update_Bonus_score).w
 	moveq	#0,d0
+	;instantly add score
+	move.b	(Ctrl_1_Press).w,d0
+	andi.b	#button_B_mask|button_C_mask|button_A_mask,d0 ; is A, B or C pressed?
+		beq.w	.nobuttons	; if not, branch
+		moveq	#0,d0
+		add.w	(Bonus_Countdown_1).w,d0	;instantly add bonuses to d0, then clear
+		clr.w	(Bonus_Countdown_1).w
+		add.w	(Bonus_Countdown_2).w,d0	;instantly add bonuses to d0, then clear
+		clr.w	(Bonus_Countdown_2).w
+		add.w	(Bonus_Countdown_3).w,d0	;instantly add bonuses to d0, then clear
+		clr.w	(Bonus_Countdown_3).w
+		bra.s	loc_141E6			;go to end
+.nobuttons:
 	tst.w	(Bonus_Countdown_1).w
 	beq.s	loc_141C6
 	addi.w	#10,d0
@@ -27805,8 +27818,7 @@ loc_14220:
 	bsr.w	Adjust2PArtPointer2
 	move.b	#0,render_flags(a1)
 	move.w	#60,anim_frame_duration(a1)
-	addq.b	#1,(Update_HUD_lives).w	; update lives counter
-	addq.b	#1,(Life_count).w	;give you a life instead of a continue
+	;moved continue thing
 
 return_14254:
 
@@ -27858,6 +27870,8 @@ loc_142B0:
 
 loc_142BC:
 	addi_.b	#2,routine(a0)
+	addq.b	#1,(Update_HUD_lives).w	; update lives counter
+	addq.b	#1,(Life_count).w	;give you a life instead of a continue
 	move.w	#MusID_ExtraLife,d0	;SndID_ContinueJingle to MusID_ExtraLife at result screen
 	jsr	(PlaySound).l
 
@@ -28222,6 +28236,28 @@ Obj6F_TallyScore:
 	bsr.w	DisplaySprite
 	move.b	#1,(Update_Bonus_score).w
 	moveq	#0,d0
+	;instantly add score
+	move.b	(Ctrl_1_Press).w,d0
+	andi.b	#button_B_mask|button_C_mask|button_A_mask,d0 ; is A, B or C pressed?
+		beq.w	.nobuttons	; if not, branch
+		moveq	#0,d0		
+		add.w	(Bonus_Countdown_1).w,d0	;instantly add bonuses to d0, then clear
+		add.w	(Bonus_Countdown_2).w,d0	;instantly add bonuses to d0, then clear
+		move.w	d0,(Bonus_Countdown_3).w
+
+		add.w	(Bonus_Countdown_3).w,d0
+		add.w	(Bonus_Countdown_3).w,d0
+		add.w	(Bonus_Countdown_3).w,d0
+		add.w	(Bonus_Countdown_3).w,d0
+		asl.w	#1,d0	;add itself 5 times, then multiply by 2
+		add.w	(Total_Bonus_Countdown).w,d0	;add gems bonus later
+
+		clr.w	(Bonus_Countdown_1).w
+		clr.w	(Bonus_Countdown_2).w
+		clr.w	(Bonus_Countdown_3).w
+		clr.w	(Total_Bonus_Countdown).w
+		bra.s	+++			;go to end
+.nobuttons:
 	tst.w	(Bonus_Countdown_1).w
 	beq.s	+
 	addi.w	#10,d0
@@ -28278,6 +28314,16 @@ Obj6F_TallyPerfect:
 	bsr.w	DisplaySprite
 	move.b	#1,(Update_Bonus_score).w
 	moveq	#0,d0
+	;perfect bonus skip points
+;instantly add score
+	move.b	(Ctrl_1_Press).w,d0
+	andi.b	#button_B_mask|button_C_mask|button_A_mask,d0 ; is A, B or C pressed?
+		beq.w	.nobuttons	; if not, branch
+		moveq	#0,d0
+		add.w	(Bonus_Countdown_1).w,d0	;instantly add bonuses to d0, then clear
+		clr.w	(Bonus_Countdown_1).w
+		bra.s	+			;go to end
+.nobuttons:
 	tst.w	(Bonus_Countdown_1).w
 	beq.s	+
 	addi.w	#20,d0
