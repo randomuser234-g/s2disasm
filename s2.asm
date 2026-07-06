@@ -39389,6 +39389,9 @@ Tails_OutWaterSkipSpeed:
 ; ---------------------------------------------------------------------------
 ; loc_1C00A:
 Obj02_MdNormal:
+		move.b	#0,(Tails_doublejump).w
+		move.b	#0,(Tails_carrying_Sonic).w	;stop thinking tails is carrying sonic
+
 	bsr.w	Tails_CheckSpindash
 	bsr.w	Tails_Jump
 	bsr.w	Tails_SlopeResist
@@ -40831,6 +40834,7 @@ Tails_ResetOnFloor_Part3:
 	bclr	#status.player.pushing,status(a0)
 	bclr	#status.player.rolljumping,status(a0)
 	move.b	#0,jumping(a0)
+        move.b  #0, (Tails_doublejump).w              ; clear jump flag
     if fixBugs
 	; Without this check, AI Tails will ruin the player's
 	; combo when he touches the floor.
@@ -91834,6 +91838,7 @@ Tails_CarrySonic:	;code copied from obj7F, one of vines in mystic cave zone
 	addi.w	#$1D,y_pos(a1)	;30		; the 3 numbers edited here may be where on y axis tails should hold sonic
 	move.b	#AniIDSonAni_Hang2,anim(a1)
 	move.b	#1,(Tails_carrying_Sonic).w
+	move.b	#0,(Tails_CPU_jumping).w
 	btst	#button_down,(Ctrl_1_Held_Logical).w	; is down being pressed?
 	beq.s	.end			; if not, branch
 	move.b	#AniIDSonAni_Roll,anim(a1)
