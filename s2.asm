@@ -37092,18 +37092,29 @@ Sonic_Boundary_Sides:
 Sonic_Roll:
 	_btst	#status_secondary.sliding,status_secondary(a0)
 	_bne.s	Obj01_NoRoll
-	mvabs.w	inertia(a0),d0
-	cmpi.w	#$80,d0		; is Sonic moving at $80 speed or faster?
-	blo.s	Obj01_NoRoll	; if not, branch
 	move.b	(Ctrl_1_Held_Logical).w,d0
-	andi.b	#button_left_mask|button_right_mask,d0 ; is left/right being pressed?
+	andi.b	#button_left_mask|button_right_mask,d0		; is left/right being pressed?
 	bne.s	Obj01_NoRoll	; if yes, branch
-	btst	#button_down,(Ctrl_1_Held_Logical).w ; is down being pressed?
-	bne.s	Obj01_ChkRoll			; if yes, branch
+	btst	#button_down,(Ctrl_1_Held_Logical).w	; is down being pressed?
+	beq.s	Obj01_ChkWalk			; if yes, branch
+	mvabs.w	inertia(a0),d0
+
+	cmpi.w	#$100,d0		; is Sonic moving at $100 speed or faster?
+	bhs.s	Obj01_ChkRoll	; if yes, branch
+	btst	#status.player.on_object,status(a0)
+	bne.s	Obj01_NoRoll	; if not, branch
+	move.b	#AniIDSonAni_Duck,anim(a0)	;  "duck" animation
 ; return_1A9F8:
 Obj01_NoRoll:
 	rts
+; ---------------------------------------------------------------------------
 
+; obj01_ChkWalk
+Obj01_ChkWalk:
+	cmpi.b	#AniIDSonAni_Duck,anim(a0)	; check if "duck" animation
+		bne.s	Obj01_NoRoll			;if yes, branch
+	move.b	#AniIDSonAni_Walk,anim(a0)	; use "walking" animation
+		rts
 ; ---------------------------------------------------------------------------
 ; loc_1A9FA:
 Obj01_ChkRoll:
@@ -40148,18 +40159,29 @@ Tails_Boundary_Sides:
 Tails_Roll:
 	_btst	#status_secondary.sliding,status_secondary(a0)
 	_bne.s	Obj02_NoRoll
-	mvabs.w	inertia(a0),d0
-	cmpi.w	#$80,d0		; is Tails moving at $80 speed or faster?
-	blo.s	Obj02_NoRoll	; if not, branch
 	move.b	(Ctrl_2_Held_Logical).w,d0
 	andi.b	#button_left_mask|button_right_mask,d0		; is left/right being pressed?
 	bne.s	Obj02_NoRoll	; if yes, branch
 	btst	#button_down,(Ctrl_2_Held_Logical).w	; is down being pressed?
-	bne.s	Obj02_ChkRoll			; if yes, branch
+	beq.s	Obj02_ChkWalk			; if yes, branch
+	mvabs.w	inertia(a0),d0
+
+	cmpi.w	#$100,d0		; is Tails moving at $100 speed or faster?
+	bhs.s	Obj02_ChkRoll	; if yes, branch
+	btst	#status.player.on_object,status(a0)
+	bne.s	Obj02_NoRoll	; if not, branch
+	move.b	#AniIDSonAni_Duck,anim(a0)	;  "duck" animation
 ; return_1C5DE:
 Obj02_NoRoll:
 	rts
+; ---------------------------------------------------------------------------
 
+; obj02_ChkRoll
+Obj02_ChkWalk:
+	cmpi.b	#AniIDSonAni_Duck,anim(a0)	; check if "duck" animation
+		bne.s	Obj02_NoRoll		;if not branch
+	move.b	#AniIDSonAni_Walk,anim(a0)	; use "walking" animation
+		rts
 ; ---------------------------------------------------------------------------
 ; loc_1C5E0:
 Obj02_ChkRoll:
