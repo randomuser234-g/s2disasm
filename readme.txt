@@ -16,6 +16,8 @@ some minor qol
 
 -more lives
 
+-duck without coming to standstill
+
 -Tails flight
 To control, there are 2 different modes
 hold A for gradual flight
