@@ -51,7 +51,7 @@ useFullWaterTables = 0
 ;	| Set to 1 if you've shifted level IDs around or you want water in levels with a level slot below 8
 debugbuild = 0
 ;	| If 1, level select and debug instantly enabled on the title screen
-yourpast = 1
+yourpast = 0
 ;	| If 1,shield is disabled and clone sonic will appear
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -39055,6 +39055,10 @@ TailsCPU_Normal_SonicOK:
 	bne.w	TailsCPU_Normal_HumanControl		; (if not, branch)
 	tst.b	obj_control(a0)			; and Tails isn't fully object controlled (&$80)
 	bmi.w	TailsCPU_Normal_HumanControl		; (if not, branch)
+	cmpi.b	#1,(Tails_carrying_Sonic).w	;carrying Sonic?
+	bne.s	+				;if not branch
+	jmp	Tails_SonicControl		;if yes, go to sonic's controls
++
 	tst.w	move_lock(a0)			; and Tails' movement is locked (usually because he just fell down a slope)
 	beq.s	+					; (if not, branch)
 	tst.w	inertia(a0)			; and Tails is stopped, then...
@@ -39086,15 +39090,6 @@ TailsCPU_Normal_SonicOK:
 
 ; Tails wants to go left because that's where Sonic is
 ; loc_1BD76: TailsCPU_Normal_FollowLeft:
-
-	tst.b	(Tails_carrying_Sonic).w                   ; is tails flying?
-        beq.s   .dontflysonic				;if not, don't do this
-	btst	#button_left,(Ctrl_1_Held_Logical).w	; is left being pressed?
-	beq.s	+
-	andi.w	#~(((button_left_mask|button_right_mask)<<8)|(button_left_mask|button_right_mask)),d1	; AND out Sonic's left/right input...
-	ori.w	#(button_left_mask<<8)|button_left_mask,d1	; ...and give Tails his own
-	bra.s	+
-.dontflysonic:
 	cmpi.w	#$10,d2
 	blo.s	+
 	andi.w	#~(((button_left_mask|button_right_mask)<<8)|(button_left_mask|button_right_mask)),d1	; AND out Sonic's left/right input...
@@ -39110,15 +39105,6 @@ TailsCPU_Normal_SonicOK:
 ; Tails wants to go right because that's where Sonic is
 ; loc_1BD98:
 TailsCPU_Normal_FollowRight:
-
-	tst.b	(Tails_carrying_Sonic).w                   ; is tails flying?
-        beq.s   .dontflysonic				;if not, don't do this
-	btst	#button_right,(Ctrl_1_Held_Logical).w	; is left being pressed?
-	beq.s	+
-	andi.w	#~(((button_left_mask|button_right_mask)<<8)|(button_left_mask|button_right_mask)),d1	; AND out Sonic's left/right input
-	ori.w	#(button_right_mask<<8)|button_right_mask,d1	; ...and give Tails his own
-	bra.s	+
-.dontflysonic:
 	cmpi.w	#$10,d2
 	blo.s	+
 	andi.w	#~(((button_left_mask|button_right_mask)<<8)|(button_left_mask|button_right_mask)),d1	; AND out Sonic's left/right input
@@ -91785,7 +91771,20 @@ FlyP3:
 		addi.w	#8,y_vel(a0)
 		rts
 ; End of function Tails_StartFlying
-
+Tails_SonicControl:
+		move.b	(Ctrl_1_Logical).w,d0
+		andi.b	#button_left_mask|button_right_mask,d0
+		beq.s	.ABC
+		or.b	(Ctrl_2_Logical).w,d0
+		move.b	d0,(Ctrl_2_Logical).w
+.ABC:
+		move.b	(Ctrl_1_Logical).w,d0
+		andi.b	#button_A_mask+button_B_mask+button_C_mask,d0	;little issue, only A responds to flying
+		beq.s	.donothing
+		or.b	(Ctrl_2_Logical).w,d0
+		move.b	d0,(Ctrl_2_Logical).w
+.donothing:
+		rts
 ;custom "instashield" for sonic
 
 Sonic_InstaShield:
