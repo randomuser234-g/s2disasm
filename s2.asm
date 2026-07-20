@@ -41366,12 +41366,12 @@ TailsAniData:		offsetTable
 			offsetTableEntry.w TailsAni_Hurt2	; 26 ; $1A
 			offsetTableEntry.w TailsAni_Slide	; 27 ; $1B
 			offsetTableEntry.w TailsAni_Blank	; 28 ; $1C
-			offsetTableEntry.w TailsAni_Balance3	; 33 ; $21	unused
-			offsetTableEntry.w TailsAni_Balance4	; 34 ; $22	unused
-			offsetTableEntry.w TailsAni_Transform	; 29 ; $1D	unused
-			offsetTableEntry.w TailsAni_Lying	; 30 ; $1E	unused
-			offsetTableEntry.w TailsAni_LieDown	; 31 ; $1F	unused
-			offsetTableEntry.w TailsAni_InstaShield	; 32 ; $20	unused
+			offsetTableEntry.w TailsAni_Balance3	; 33 ; $1D	dummy3
+			offsetTableEntry.w TailsAni_Balance4	; 34 ; $1E	dummy4
+			offsetTableEntry.w TailsAni_Transform	; 29 ; $1F	unused+
+			offsetTableEntry.w TailsAni_Lying	; 30 ; $20	unused+
+			offsetTableEntry.w TailsAni_LieDown	; 31 ; $21	unused+
+			offsetTableEntry.w TailsAni_InstaShield	; 32 ; $22	unused++
 TailsAni_HaulAss_ptr:	offsetTableEntry.w TailsAni_HaulAss	; 35 ; $23
 TailsAni_Fly_ptr:	offsetTableEntry.w TailsAni_Fly		; 36 ; $24
 
@@ -41621,6 +41621,10 @@ Obj05AniSelection:
 	dc.b	0,0	; TailsAni_Hurt,Slide	->
 	dc.b	0	; TailsAni_Blank	->
 	dc.b	0,0	; TailsAni_Dummy4,5	->
+	dc.b	0	; TailsAni_Transform	->
+	dc.b	0	; TailsAni_Lying	->
+	dc.b	0	; TailsAni_LieDown	->
+	dc.b	0	; TailsAni_InstaShield	->
 	dc.b	0	; TailsAni_HaulAss	->
 	dc.b	0	; TailsAni_Fly		->
 	even
@@ -91823,7 +91827,7 @@ Sonic_InstaShield:
 		beq.s	rts_SonicInstaShield		;if not, don't do move
 		;turn super sonic
 		tst.b	(Super_Sonic_flag).w	; is Sonic already Super?
-		bne.s	.skipsuper		; if yes, no insta shield
+		bne.s	.skipsuper		; if yes, don't go super
 		cmpi.b	#7,(Emerald_count).w	; does Sonic have exactly 7 emeralds?
 		bne.s	.skipsuper		; if not, don't go super
 		cmpi.w	#50,(Ring_count).w	; does Sonic have at least 50 rings?
