@@ -1038,8 +1038,8 @@ offset :=	TailsAniData
 ptrsize :=	2
 idstart :=	0
 
-AniIDTailsAni_HaulAss		= id(TailsAni_HaulAss_ptr)	; 31 ; $1F
-AniIDTailsAni_Fly		= id(TailsAni_Fly_ptr)		; 32 ; $20
+AniIDTailsAni_HaulAss		= id(TailsAni_HaulAss_ptr)	; 35 ; $1F
+AniIDTailsAni_Fly		= id(TailsAni_Fly_ptr)		; 36 ; $20
 
 
 ; Other sizes

@@ -51,7 +51,7 @@ useFullWaterTables = 0
 ;	| Set to 1 if you've shifted level IDs around or you want water in levels with a level slot below 8
 debugbuild = 0
 ;	| If 1, level select and debug instantly enabled on the title screen
-yourpast = 0
+yourpast = 1
 ;	| If 1,shield is disabled and clone sonic will appear
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -38453,6 +38453,8 @@ SupSonAni_Transform_ptr:	offsetTableEntry.w SupSonAni_Transform	; 31 ; $1F
 SonAni_Lying_ptr:		offsetTableEntry.w SonAni_Lying		; 32 ; $20
 SonAni_LieDown_ptr:		offsetTableEntry.w SonAni_LieDown	; 33 ; $21
 SonAni_InstaShield_ptr:		offsetTableEntry.w SonAni_InstaShield	; 34 ; $22
+SonAni_HaulAss_ptr:		offsetTableEntry.w SonAni_HaulAss	; 35 ; $23
+SonAni_Fly_ptr:			offsetTableEntry.w SonAni_Fly		; 36 ; $24
 
 SonAni_Walk:	dc.b $FF, $F,$10,$11,$12,$13,$14, $D, $E,$FF
 	rev02even
@@ -38532,6 +38534,10 @@ SonAni_LieDown:	dc.b   3,  7,$FD,  0
 	rev02even
 SonAni_InstaShield:	dc.b   1, $D6, $D7 ,$D6, $D7, $D6, $D7 ,$D6, $D7, $FD,  2
 	even
+SonAni_HaulAss:	dc.b $40,$4E,$FF
+	rev02even
+SonAni_Fly:	dc.b $40,$4E,$FF
+	rev02even
 
 ; ---------------------------------------------------------------------------
 ; Animation script - Super Sonic
@@ -38570,7 +38576,11 @@ SuperSonicAniData: offsetTable
 	offsetTableEntry.w SonAni_Balance3	; 29 ; $1D
 	offsetTableEntry.w SonAni_Balance4	; 30 ; $1E
 	offsetTableEntry.w SupSonAni_Transform	; 31 ; $1F
-	offsetTableEntry.w SonAni_InstaShield	; 32 ; $20
+	offsetTableEntry.w SonAni_Lying		; 32 ; $20
+	offsetTableEntry.w SonAni_LieDown	; 33 ; $21
+	offsetTableEntry.w SonAni_InstaShield	; 34 ; $22
+	offsetTableEntry.w SonAni_HaulAss		; 35 ; $23
+	offsetTableEntry.w SonAni_Fly		; 36 ; $24
 
 SupSonAni_Walk:		dc.b $FF,$77,$78,$79,$7A,$7B,$7C,$75,$76,$FF
 	rev02even
@@ -41323,7 +41333,7 @@ loc_1D006:
 ; ===========================================================================
 
 ; ---------------------------------------------------------------------------
-; Animation script - Tails
+; Animation script - Tails	sonic's script is 34 ($22)
 ; ---------------------------------------------------------------------------
 ; off_1D038:
 TailsAniData:		offsetTable
@@ -41356,10 +41366,14 @@ TailsAniData:		offsetTable
 			offsetTableEntry.w TailsAni_Hurt2	; 26 ; $1A
 			offsetTableEntry.w TailsAni_Slide	; 27 ; $1B
 			offsetTableEntry.w TailsAni_Blank	; 28 ; $1C
-			offsetTableEntry.w TailsAni_Dummy4	; 29 ; $1D
-			offsetTableEntry.w TailsAni_Dummy5	; 30 ; $1E
-TailsAni_HaulAss_ptr:	offsetTableEntry.w TailsAni_HaulAss	; 31 ; $1F
-TailsAni_Fly_ptr:	offsetTableEntry.w TailsAni_Fly		; 32 ; $20
+			offsetTableEntry.w TailsAni_Balance3	; 33 ; $21	unused
+			offsetTableEntry.w TailsAni_Balance4	; 34 ; $22	unused
+			offsetTableEntry.w TailsAni_Transform	; 29 ; $1D	unused
+			offsetTableEntry.w TailsAni_Lying	; 30 ; $1E	unused
+			offsetTableEntry.w TailsAni_LieDown	; 31 ; $1F	unused
+			offsetTableEntry.w TailsAni_InstaShield	; 32 ; $20	unused
+TailsAni_HaulAss_ptr:	offsetTableEntry.w TailsAni_HaulAss	; 35 ; $23
+TailsAni_Fly_ptr:	offsetTableEntry.w TailsAni_Fly		; 36 ; $24
 
 TailsAni_Walk:	dc.b $FF,$10,$11,$12,$13,$14,$15, $E, $F,$FF
 	rev02even
@@ -41423,9 +41437,19 @@ TailsAni_Slide:		dc.b   9,$6B,$5C,$FF
 	rev02even
 TailsAni_Blank:		dc.b $77,  0,$FD,  0
 	rev02even
-TailsAni_Dummy4:	dc.b   3,  1,  2,  3,  4,  5,  6,  7,  8,$FF
+TailsAni_Balance3:	dc.b   9,$69,$69,$6A,$6A,$69,$69,$6A,$6A,$69,$69,$6A,$6A,$69,$69,$6A
+			dc.b $6A,$69,$69,$6A,$6A,$69,$6A,$FF
 	rev02even
-TailsAni_Dummy5:	dc.b   3,  1,  2,  3,  4,  5,  6,  7,  8,$FF
+TailsAni_Balance4:	dc.b   9,$69,$69,$6A,$6A,$69,$69,$6A,$6A,$69,$69,$6A,$6A,$69,$69,$6A
+			dc.b $6A,$69,$69,$6A,$6A,$69,$6A,$FF
+	rev02even
+TailsAni_Transform:	dc.b  $B,$74,$74,$12,$13,$FD,  0
+	rev02even
+TailsAni_Lying:	dc.b $3F,$5B,$FF
+	rev02even
+TailsAni_LieDown:	dc.b   2,  $FD, 0
+	rev02even
+TailsAni_InstaShield:	dc.b   1, $5E, $5F ,$5E, $5F, $5E, $5F ,$5E, $5F, $FD,  2
 	rev02even
 TailsAni_HaulAss:	dc.b $FF,$32,$33,$FF
 			dc.b $FF,$FF,$FF,$FF,$FF,$FF
@@ -91779,7 +91803,7 @@ Tails_SonicControl:
 		move.b	d0,(Ctrl_2_Logical).w
 .ABC:
 		move.b	(Ctrl_1_Logical).w,d0
-		andi.b	#button_A_mask+button_B_mask+button_C_mask,d0	;little issue, only A responds to flying
+		andi.b	#button_B_mask|button_C_mask|button_A_mask,d0	;little issue, only A responds to flying
 		beq.s	.donothing
 		or.b	(Ctrl_2_Logical).w,d0
 		move.b	d0,(Ctrl_2_Logical).w
@@ -91799,7 +91823,7 @@ Sonic_InstaShield:
 		beq.s	rts_SonicInstaShield		;if not, don't do move
 		;turn super sonic
 		tst.b	(Super_Sonic_flag).w	; is Sonic already Super?
-		bne.s	rts_SonicInstaShield		; if yes, no insta shield
+		bne.s	.skipsuper		; if yes, no insta shield
 		cmpi.b	#7,(Emerald_count).w	; does Sonic have exactly 7 emeralds?
 		bne.s	.skipsuper		; if not, don't go super
 		cmpi.w	#50,(Ring_count).w	; does Sonic have at least 50 rings?
