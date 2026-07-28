@@ -38455,6 +38455,14 @@ SonAni_LieDown_ptr:		offsetTableEntry.w SonAni_LieDown	; 33 ; $21
 SonAni_InstaShield_ptr:		offsetTableEntry.w SonAni_InstaShield	; 34 ; $22
 SonAni_HaulAss_ptr:		offsetTableEntry.w SonAni_HaulAss	; 35 ; $23
 SonAni_Fly_ptr:			offsetTableEntry.w SonAni_Fly		; 36 ; $24
+SonAni_Carry_ptr:		offsetTableEntry.w SonAni_Carry		; 37 ; $25	;Carry
+SonAni_CarryUp_ptr:		offsetTableEntry.w SonAni_CarryUp	; 38 ; $26	;CarryUp
+SonAni_Tired_ptr:		offsetTableEntry.w SonAni_Tired		; 39 ; $27	;Tired
+SonAni_CarryTired_ptr:		offsetTableEntry.w SonAni_CarryTired	; 40 ; $28	;CarryTired
+SonAni_Swim_ptr:		offsetTableEntry.w SonAni_Swim		; 41 ; $29	;Swim
+SonAni_SwimUp_ptr:		offsetTableEntry.w SonAni_SwimUp	; 42 ; $2A	;SwimUp
+SonAni_SwimCarry_ptr:		offsetTableEntry.w SonAni_SwimCarry	; 43 ; $2B	;SwimCarry
+SonAni_SwimTired_ptr:		offsetTableEntry.w SonAni_SwimTired	; 44 ; $2C	;SwimTired
 
 SonAni_Walk:	dc.b $FF, $F,$10,$11,$12,$13,$14, $D, $E,$FF
 	rev02even
@@ -38532,13 +38540,30 @@ SonAni_Lying:	dc.b   9,  8,  9,$FF
 	rev02even
 SonAni_LieDown:	dc.b   3,  7,$FD,  0
 	rev02even
-SonAni_InstaShield:	dc.b   1, $D6, $D7 ,$D6, $D7, $D6, $D7 ,$D6, $D7, $FD,  2
+SonAni_InstaShield:	dc.b   1, $D6, $D7 ,$D8, $D9, $D6, $D7 ,$D8, $D9, $FD,  2
+	rev02even
+SonAni_HaulAss:
+	dc.b 	1,$4E,$FF,$FF,$FF,$FF
+	rev02even
+SonAni_Fly:
+	dc.b 	1,$4E,$FF,$FF,$FF,$FF
+	rev02even
+SonAni_Carry:		dc.b	$3F, $8C, $FF
+	rev02even
+SonAni_CarryUp:	dc.b	$3F, $8D, $FF
+	rev02even
+SonAni_Tired:		dc.b	$B, $8E, $8F, $FF
+	rev02even
+SonAni_CarryTired:	dc.b	$B, $90, $91, $FF
+	rev02even
+SonAni_Swim:		dc.b	7, $92, $93, $94, $95, $96, $FF
+	rev02even
+SonAni_SwimUp:	dc.b	7, $92, $93, $94, $95, $96, $FF
+	rev02even
+SonAni_SwimCarry:	dc.b	7, $97, $98,$99, $9A, $9B, $9A, $FF
+	rev02even
+SonAni_SwimTired:	dc.b	$B, $99, $9A, $9B, $9A,$99, $9A, $9B, $9A, $FF
 	even
-SonAni_HaulAss:	dc.b $40,$4E,$FF
-	rev02even
-SonAni_Fly:	dc.b $40,$4E,$FF
-	rev02even
-
 ; ---------------------------------------------------------------------------
 ; Animation script - Super Sonic
 ; (many of these point to the data above this)
@@ -38579,8 +38604,16 @@ SuperSonicAniData: offsetTable
 	offsetTableEntry.w SonAni_Lying		; 32 ; $20
 	offsetTableEntry.w SonAni_LieDown	; 33 ; $21
 	offsetTableEntry.w SonAni_InstaShield	; 34 ; $22
-	offsetTableEntry.w SonAni_HaulAss		; 35 ; $23
+	offsetTableEntry.w SonAni_HaulAss	; 35 ; $23
 	offsetTableEntry.w SonAni_Fly		; 36 ; $24
+	offsetTableEntry.w SonAni_Carry		; 37 ; $25
+	offsetTableEntry.w SonAni_CarryUp	; 38 ; $26
+	offsetTableEntry.w SonAni_Tired		; 39 ; $27
+	offsetTableEntry.w SonAni_CarryTired	; 40 ; $28
+	offsetTableEntry.w SonAni_Swim		; 41 ; $29
+	offsetTableEntry.w SonAni_SwimUp	; 42 ; $2A
+	offsetTableEntry.w SonAni_SwimCarry	; 43 ; $2B
+	offsetTableEntry.w SonAni_SwimTired	; 44 ; $2C
 
 SupSonAni_Walk:		dc.b $FF,$77,$78,$79,$7A,$7B,$7C,$75,$76,$FF
 	rev02even
@@ -38905,8 +38938,9 @@ TailsCPU_Spawning:
 	tst.b	obj_control(a1)
 	bne.s	return_1BB88
 	move.b	status(a1),d0
-	andi.b	#1<<status.player.in_air|1<<status.player.rolljumping|1<<status.player.underwater|1<<status.player.prevent_tails_respawn,d0
-	bne.s	return_1BB88
+	;andi.b	#1<<status.player.in_air|1<<status.player.rolljumping|1<<status.player.underwater|1<<status.player.prevent_tails_respawn,d0
+	andi.b	#1<<status.player.in_air|1<<status.player.rolljumping|1<<status.player.prevent_tails_respawn,d0
+	bne.s	return_1BB88		;skip underwater check
 ; loc_1BB54:
 TailsCPU_Respawn:
 	move.w	#4,(Tails_CPU_routine).w	; => TailsCPU_Flying
@@ -38922,6 +38956,9 @@ TailsCPU_Respawn:
 	move.w	#0,spindash_counter(a0)
 
 return_1BB88:
+	move.w	#$600,(Tails_top_speed).w
+	move.w	#$C,(Tails_acceleration).w
+	move.w	#$80,(Tails_deceleration).w
 	rts
 
 ; ===========================================================================
@@ -38940,12 +38977,13 @@ TailsCPU_Flying:
 	move.b	#1<<status.player.in_air,status(a0)
 	move.w	#0,x_pos(a0)
 	move.w	#0,y_pos(a0)
-	move.b	#AniIDTailsAni_Fly,anim(a0)
+	jsr	Tails_FlyAnimNoTimer
 	rts
 ; ---------------------------------------------------------------------------
 ; loc_1BBC8:
 TailsCPU_FlyingOnscreen:
 	move.w	#0,(Tails_respawn_counter).w
+	jsr	Tails_FlyAnimNoTimer
 ; loc_1BBCE:
 TailsCPU_Flying_Part2:
 	lea	(Sonic_Pos_Record_Buf).w,a2
@@ -38956,13 +38994,13 @@ TailsCPU_Flying_Part2:
 	sub.b	d2,d3
 	move.w	(a2,d3.w),(Tails_CPU_target_x).w
 	move.w	2(a2,d3.w),(Tails_CPU_target_y).w
-	tst.b	(Water_flag).w
-	beq.s	+
-	move.w	(Water_Level_1).w,d0
-	subi.w	#$10,d0
-	cmp.w	(Tails_CPU_target_y).w,d0
-	bge.s	+
-	move.w	d0,(Tails_CPU_target_y).w
+	;tst.b	(Water_flag).w
+	;beq.s	+
+	;move.w	(Water_Level_1).w,d0
+	;subi.w	#$10,d0
+	;cmp.w	(Tails_CPU_target_y).w,d0
+	;bge.s	+
+	;move.w	d0,(Tails_CPU_target_y).w
 +
 	move.w	x_pos(a0),d0
 	sub.w	(Tails_CPU_target_x).w,d0
@@ -39011,10 +39049,8 @@ loc_1BC64:
 	add.w	d2,y_pos(a0)
 
 loc_1BC68:
-	lea	(Sonic_Stat_Record_Buf).w,a2
-	move.b	2(a2,d3.w),d2
-	andi.b	#$D2,d2
-	bne.s	return_1BCDE
+	cmpi.b	#6,(MainCharacter+routine).w	; is Sonic dead?
+	bhs.s	return_1BCDE			; if yes, branch
 	or.w	d0,d1
 	bne.s	return_1BCDE
 	move.w	#6,(Tails_CPU_routine).w	; => TailsCPU_Normal
@@ -39055,7 +39091,7 @@ TailsCPU_Normal:
 	move.w	#0,spindash_counter(a0)
 	move.b	#$81,obj_control(a0)
 	move.b	#1<<status.player.in_air,status(a0)
-	move.b	#AniIDTailsAni_Fly,anim(a0)
+	jsr	Tails_FlyAnimNoTimer
 	rts
 ; ---------------------------------------------------------------------------
 ; loc_1BD0E:
@@ -39195,7 +39231,7 @@ TailsCPU_Despawn:
 	move.b	#1<<status.player.in_air,status(a0)
 	move.w	#$4000,x_pos(a0)
 	move.w	#0,y_pos(a0)
-	move.b	#AniIDTailsAni_Fly,anim(a0)
+	jsr	Tails_FlyAnimNoTimer
 	rts
 ; ===========================================================================
 ; sub_1BE66:
@@ -40853,6 +40889,7 @@ Tails_ResetOnFloor_Part3:
 	bclr	#status.player.rolljumping,status(a0)
 	move.b	#0,jumping(a0)
         move.b  #0, (Tails_doublejump).w              ; clear jump flag
+	move.b	#$F0,(Tails_flight_timer)     ;would be 4 seconds, only run decrement every 2nd frame to get 8
     if fixBugs
 	; Without this check, AI Tails will ruin the player's
 	; combo when he touches the floor.
@@ -41374,6 +41411,15 @@ TailsAniData:		offsetTable
 			offsetTableEntry.w TailsAni_InstaShield	; 32 ; $22	unused++
 TailsAni_HaulAss_ptr:	offsetTableEntry.w TailsAni_HaulAss	; 35 ; $23
 TailsAni_Fly_ptr:	offsetTableEntry.w TailsAni_Fly		; 36 ; $24
+TailsAni_Carry_ptr:	offsetTableEntry.w TailsAni_Carry	; 37 ; $25	;added
+TailsAni_CarryUp_ptr:	offsetTableEntry.w TailsAni_CarryUp	; 38 ; $26	;added
+TailsAni_Tired_ptr:	offsetTableEntry.w TailsAni_Tired	; 39 ; $27	;added
+TailsAni_CarryTired_ptr:offsetTableEntry.w TailsAni_CarryTired	; 40 ; $28	;added
+TailsAni_Swim_ptr:	offsetTableEntry.w TailsAni_Swim	; 41 ; $29	;added
+TailsAni_SwimUp_ptr:	offsetTableEntry.w TailsAni_SwimUp	; 42 ; $2A	;added
+TailsAni_SwimCarry_ptr:	offsetTableEntry.w TailsAni_SwimCarry	; 43 ; $2B	;added
+TailsAni_SwimTired_ptr:	offsetTableEntry.w TailsAni_SwimTired	; 44 ; $2C	;added
+
 
 TailsAni_Walk:	dc.b $FF,$10,$11,$12,$13,$14,$15, $E, $F,$FF
 	rev02even
@@ -41455,6 +41501,22 @@ TailsAni_HaulAss:	dc.b $FF,$32,$33,$FF
 			dc.b $FF,$FF,$FF,$FF,$FF,$FF
 	rev02even
 TailsAni_Fly:		dc.b   1,$5E,$5F,$FF
+	rev02even
+TailsAni_Carry:		dc.b	$3F, $8D, $FF
+	rev02even
+TailsAni_CarryUp:	dc.b	$3F, $8E, $FF
+	rev02even
+TailsAni_Tired:		dc.b	$B, $8F, $90, $FF
+	rev02even
+TailsAni_CarryTired:	dc.b	$B, $91, $92, $FF
+	rev02even
+TailsAni_Swim:		dc.b	7, $93, $94, $95, $96, $97, $FF
+	rev02even
+TailsAni_SwimUp:	dc.b	3, $93, $94, $95, $96, $97, $FF
+	rev02even
+TailsAni_SwimCarry:	dc.b	4, $98, $99, $FF
+	rev02even
+TailsAni_SwimTired:	dc.b	$B, $9A, $9B, $9C, $9B, $FF
 	even
 
 ; ===========================================================================
@@ -41626,7 +41688,15 @@ Obj05AniSelection:
 	dc.b	0	; TailsAni_LieDown	->
 	dc.b	0	; TailsAni_InstaShield	->
 	dc.b	0	; TailsAni_HaulAss	->
-	dc.b	0	; TailsAni_Fly		->
+	dc.b	$B	; TailsAni_Fly	-> Flying
+	dc.b	$B	; TailsAni_Carry	->
+	dc.b	$B	; TailsAni_CarryUp	->
+	dc.b	$B	; TailsAni_Tired	->
+	dc.b	$B	; TailsAni_CarryTired	->
+	dc.b	0	; TailsAni_Swim		-> blank
+	dc.b	0	; TailsAni_SwimUp	-> blank
+	dc.b	0	; TailsAni_SwimCarry	-> blank
+	dc.b	0	; TailsAni_SwimTired	-> blank
 	even
 
 ; ---------------------------------------------------------------------------
@@ -41645,6 +41715,7 @@ Obj05AniData:	offsetTable
 		offsetTableEntry.w Obj05Ani_Skidding	;  8
 		offsetTableEntry.w Obj05Ani_Pushing	;  9
 		offsetTableEntry.w Obj05Ani_Hanging	; $A
+		offsetTableEntry.w Obj05Ani_Flying	; $B
 
 Obj05Ani_Blank:		dc.b $20,  0,$FF
 	rev02even
@@ -41667,6 +41738,8 @@ Obj05Ani_Skidding:	dc.b   2,$87,$88,$89,$8A,$FF
 Obj05Ani_Pushing:	dc.b   9,$87,$88,$89,$8A,$FF
 	rev02even
 Obj05Ani_Hanging:	dc.b   9,$81,$82,$83,$84,$FF
+	even
+Obj05Ani_Flying:	dc.b   1, $8B, $8C, $FF
 	even
 
 ; ===========================================================================
@@ -47343,7 +47416,7 @@ Obj14_UpdateMappingAndCollision:
 	move.b	width_pixels(a0),d1
 	moveq	#8,d3
 	move.w	(sp)+,d4
-	bra.w	SlopedPlatform
+	jmp	SlopedPlatform
 ; ===========================================================================
 
 return_21A74:
@@ -48304,8 +48377,12 @@ loc_225FC:
 	sub.w	y_pos(a0),d1
 	cmpi.w	#$80,d1
 	bhs.w	return_22718
-	cmpi.b	#$20,anim(a1)
-	beq.w	return_22718
+	;fix for chemical plant tubes
+	cmpi.b	#ObjID_Tails,id(a1)		; is the character Tails?
+	bne.s	.nottails			; if not, branch
+	cmpi.w	#4,(Tails_CPU_routine).w	; is Tails respawning?
+	beq.w	return_22718			; if yes, branch
+.nottails:
 
 	moveq	#0,d3
 	cmpi.w	#$A0,d2
@@ -78084,10 +78161,10 @@ ObjB0_Init:
 	rts
 ; ===========================================================================
 off_3A294:
-	dc.l DPLC_3e9b_45		;edited the original sonic mappings, change the labels for sega screen
-	dc.l DPLC_3e9b_46
-	dc.l DPLC_3e9b_47
-	dc.l DPLC_3e9b_48
+	dc.l DPLC_1f9a_45		;edited the original sonic mappings, change the labels for sega screen
+	dc.l DPLC_1f9a_46
+	dc.l DPLC_1f9a_47
+	dc.l DPLC_1f9a_48
 
 map_piece macro width,height
 	dc.l copysrc,copydst
@@ -85077,7 +85154,23 @@ Touch_Enemy:
 	cmpi.b	#AniIDSonAni_InstaShield,anim(a0)	; is Sonic insta shield?
 	beq.s	+		; if yes, branch
 	cmpi.b	#AniIDSonAni_Roll,anim(a0)		; is Sonic rolling?
-	bne.w	Touch_ChkHurt		; if not, branch
+	beq.w	+		; if yes, hurt the enemy
+		;s3 final tails code
+		cmpi.b	#ObjID_Tails,id(a0)			; Is player Tails?
+		bne.w	Touch_ChkHurt				; If not, branch
+		tst.b	(Tails_doublejump).w			; Is Tails flying ("gravity-affected")?
+		beq.w	Touch_ChkHurt				; If not, branch
+		btst	#status.player.underwater,status(a0)		; Is Tails underwater?
+		bne.w	Touch_ChkHurt				; If not, branch
+		move.w	x_pos(a0),d1
+		move.w	y_pos(a0),d2
+		sub.w	x_pos(a1),d1
+		sub.w	y_pos(a1),d2
+		jsr	(CalcAngle).l				;calculate the angle
+		subi.b	#$20,d0
+		cmpi.b	#$40,d0					;above Tails?
+		bhs.w	Touch_ChkHurt				;if not, branch
+
 +
 	btst	#render_flags.multi_sprite,render_flags(a1)
 	beq.s	Touch_Enemy_Part2
@@ -91691,8 +91784,11 @@ CloneSafeInteractObj:
 Tails_Flight:
 	tst.w	(Demo_mode_flag).w	; is demo mode on?
 	bne.w	rts_TailsFlight		; if yes, no move
+	tst.w	(Two_player_mode).w
+	bne.s	.skiptimercheck
 	tst.b	(Update_HUD_timer).w	; has Tails reached the end of the act?
 	beq.s	rts_TailsFlight		; if yes, don't fly
+.skiptimercheck:
 		btst	#2,status(a0)		; tails is rolling?
 		beq.w	rts_TailsFlight		;if not, don't fly
 		move.b	(Ctrl_2_Press_Logical).w,d0
@@ -91723,7 +91819,8 @@ Offset_0x00E382:
 
 ;Offset_0x00E394:
 .20anim:
-		move.b	#AniIDTailsAni_Fly,anim(a0)
+		move.b	#$F0,(Tails_flight_timer)	;would be 4 seconds, only run decrement every 2nd frame to get 8
+		bsr.w	Tails_SetFlyingAnimation
 
 ;Offset_0x00E39A:
 rts_TailsFlight:
@@ -91731,25 +91828,41 @@ rts_TailsFlight:
 ; End of function Tails_Flight
 ;---------------------------------------------------------------------------------------------------------
 Tails_StartFlying:
+	tst.w	(Two_player_mode).w	;2 player mode?
+	bne.s	.skiptimercheck		;if yes, don't use the timer to stop use of ability
 	tst.b	(Update_HUD_timer).w	; has Tails reached the end of the act?
 	beq.s	.noflying		; if yes, don't fly
+.skiptimercheck:
 		cmpi.b	#AniIDTailsAni_Fly,anim(a0)	;is tails in flying animation?
-		bne.s	.noflying		;if not, don't fly
-		bra.s	.flying			;otherwise fly
+		beq.s	.flying		;if yes, fly		;otherwise don't fly
+		cmpi.b	#AniIDTailsAni_Carry,anim(a0)	;is tails in flying animation?
+		beq.s	.flying		;if yes, fly		;otherwise don't fly
+		cmpi.b	#AniIDTailsAni_CarryUp,anim(a0)	;is tails in flying animation?
+		beq.s	.flying		;if yes, fly		;otherwise don't fly
+		cmpi.b	#AniIDTailsAni_Tired,anim(a0)	;is tails in flying animation?
+		beq.s	.flying		;if yes, fly		;otherwise don't fly
+		cmpi.b	#AniIDTailsAni_CarryTired,anim(a0)	;is tails in flying animation?
+		beq.s	.flying		;if yes, fly		;otherwise don't fly
+		cmpi.b	#AniIDTailsAni_Swim,anim(a0)	;is tails in flying animation?
+		beq.s	.flying		;if yes, fly		;otherwise don't fly
+		cmpi.b	#AniIDTailsAni_SwimUp,anim(a0)	;is tails in flying animation?
+		beq.s	.flying		;if yes, fly		;otherwise don't fly
+		cmpi.b	#AniIDTailsAni_SwimCarry,anim(a0)	;is tails in flying animation?
+		beq.s	.flying		;if yes, fly		;otherwise don't fly
+		cmpi.b	#AniIDTailsAni_SwimTired,anim(a0)	;is tails in flying animation?
+		beq.s	.flying		;if yes, fly		;otherwise don't fly
 	.noflying:
 		move.b	#0,(Tails_doublejump).w
 		move.b	#0,(Tails_carrying_Sonic).w
 		rts
 	.flying:
-		move.b	(Level_frame_counter+1).w,d0
-		addq.b	#8,d0
-		andi.b	#$F,d0
-		bne.s	.skipsound
-	move.w	#SndID_Flying,d0
-	jsr	(PlaySound).l
-.skipsound:
+		bsr.w	Tails_SetFlyingAnimation
 		cmpi.b	#1,(Tails_doublejump).w
 		bne.s	FlyP1
+		cmpi.b	#0,(Tails_flight_timer).w		;out of time?
+		beq.s	Tails_Speed2			;if yes, no flying
+		cmpi.b	#AniIDTailsAni_SwimCarry,anim(a0)	;is tails in swim carry animation?
+		beq.s	Tails_Speed2	;if yes, fly		;if yes, don't fly
 		move.b	(Ctrl_2_Press_Logical).w,d0
 		andi.b	#button_B_mask|button_C_mask,d0		;$30?
 		beq.s	Tails_Speed1
@@ -91777,6 +91890,10 @@ Fly_DoNothing:
 
 ;Offset_0x00DC3E:
 FlyP1:
+		cmpi.b	#0,(Tails_flight_timer).w		;out of time?
+		beq.s	FlyP3			;if yes, no flying
+		cmpi.b	#AniIDTailsAni_SwimCarry,anim(a0)	;is tails in swim carry animation?
+		beq.s	FlyP3	;if yes, fly		;if yes, don't fly
 		move.b	(Ctrl_2_Press_Logical).w,d0
 		andi.b	#button_B_mask|button_C_mask,d0
 		beq.s	FlyP2
@@ -91813,11 +91930,80 @@ Tails_SonicControl:
 		move.b	d0,(Ctrl_2_Logical).w
 .donothing:
 		rts
+
+Tails_SetFlyingAnimation:
+		cmpi.b	#0,(Tails_flight_timer).w
+		beq.s	Tails_FlyAnimNoTimer
+		btst	#0,(Level_frame_counter+1).w	;every 2nd frame?
+		beq.s	Tails_FlyAnimNoTimer				;if yes, then decrement the timer
+		subq.b	#1,(Tails_flight_timer).w
+Tails_FlyAnimNoTimer:
+		clr.b	(Tails_CPU_jumping).w		;clear cpu thing, prevent spam of jump
+		btst	#status.player.underwater,status(a0)			;underwater?	
+		bne.s	.underwater			;if yes, play underwater animations
+		cmpi.b	#1,(Tails_carrying_Sonic).w		;carrying sonic?
+		beq.s	.carry				;if yes, carrying animation
+		cmpi.b	#0,(Tails_flight_timer).w		;out of time?
+		beq.s	.flytired			;if yes, tired animation
+		move.b	#AniIDTailsAni_Fly,anim(a0)
+.sound:
+		;sound effect
+		move.b	(Level_frame_counter+1).w,d0
+		addq.b	#8,d0
+		andi.b	#$F,d0
+		bne.s	.skipsound
+		cmpi.b	#0,(Tails_flight_timer).w		;out of time?
+		beq.s	.tiredsound			;if yes, tired animation
+		move.w	#SndID_Flying,d0
+		jsr	(PlaySound).l
+		rts
+
+.tiredsound:
+		;sound effect
+		move.w	#SndID_FlyingTired,d0
+		jsr	(PlaySound).l
+		rts
+.carry:
+		cmpi.b	#0,(Tails_flight_timer).w		;out of time?
+		beq.s	.carrytired			;if yes, tired animation
+		move.b	#AniIDTailsAni_Carry,anim(a0)
+		tst.w	y_vel(a0)			;flying higher?
+		bpl.s	.sound				;if not, don't do anim
+		move.b	#AniIDTailsAni_CarryUp,anim(a0)		;otherwise, carry up animation
+		bra.s	.sound
+.carrytired:
+		move.b	#AniIDTailsAni_CarryTired,anim(a0)
+		bra.s	.sound
+		
+.flytired:	
+		move.b	#AniIDTailsAni_Tired,anim(a0)
+		bra.s	.sound
+.skipsound:
+
+		rts
+.underwater:
+		cmpi.b	#1,(Tails_carrying_Sonic).w		;carrying sonic?
+		beq.s	.swimcarry				;if yes, carrying animation
+		cmpi.b	#0,(Tails_flight_timer).w		;out of time
+		beq.s	.swimtired			;if yes, tired animation
+		move.b	#AniIDTailsAni_Swim,anim(a0)
+		tst.w	y_vel(a0)			;flying higher?
+		bpl.s	.skipsound				;if not, don't do anim
+		move.b	#AniIDTailsAni_SwimUp,anim(a0)		;otherwise, carry up animation
+		rts
+.swimtired:
+		move.b	#AniIDTailsAni_SwimTired,anim(a0)
+		rts
+.swimcarry:
+		move.b	#AniIDTailsAni_SwimCarry,anim(a0)
+		rts
 ;custom "instashield" for sonic
 
 Sonic_InstaShield:
 	tst.w	(Demo_mode_flag).w	; is demo mode on?
 	bne.w	rts_SonicInstaShield	; if yes, no move
+		cmpi.b	#1,(Tails_carrying_Sonic).w		;carrying sonic?
+		beq.s	rts_SonicInstaShield				;if yes, don't perform instashield/super
 		cmpi.b	#1,(Sonic_doublejump).w	;already did it?
 		beq.w	rts_SonicInstaShield	;if yes, don't
 		btst	#2,status(a0)		; sonic is rolling?

@@ -1040,6 +1040,14 @@ idstart :=	0
 
 AniIDTailsAni_HaulAss		= id(TailsAni_HaulAss_ptr)	; 35 ; $1F
 AniIDTailsAni_Fly		= id(TailsAni_Fly_ptr)		; 36 ; $20
+AniIDTailsAni_Carry		= id(TailsAni_Carry_ptr)	; 38 ; $21
+AniIDTailsAni_CarryUp		= id(TailsAni_CarryUp_ptr)	; 39 ; $22
+AniIDTailsAni_Tired		= id(TailsAni_Tired_ptr)	; 40 ; $23
+AniIDTailsAni_CarryTired	= id(TailsAni_CarryTired_ptr)	; 41 ; $24
+AniIDTailsAni_Swim		= id(TailsAni_Swim_ptr)		; 42 ; $25
+AniIDTailsAni_SwimUp		= id(TailsAni_SwimUp_ptr)	; 43 ; $26
+AniIDTailsAni_SwimCarry		= id(TailsAni_SwimCarry_ptr)	; 44 ; $27
+AniIDTailsAni_SwimTired		= id(TailsAni_SwimTired_ptr)	; 45 ; $28
 
 
 ; Other sizes
@@ -1487,7 +1495,7 @@ Plc_Buffer_End:
 
 Misc_Variables:
 Tails_carrying_Sonic:		ds.b	1	; check when being airlifted
-				ds.b	1	; unused
+Tails_flight_timer:		ds.b	1	; timer to cancel flight
 
 ; extra variables for the second player (CPU) in 1-player mode
 Tails_control_counter:		ds.w	1	; how long until the CPU takes control
