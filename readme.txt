@@ -45,9 +45,9 @@ the clone sonic's palette can look off
 
 the clone sonic copies current frame rather than at the time of the action, desync in action vs animation
 
-S3 prototype flight, this includes most quirks and downsides like infinite flight but can't hit badniks
+if tails is despawning without resetting on floor or flying for the first time, he is considered tired
 
-insta shield uses super sonic graphic looks broken when used in 2P
+clone doesn't copy tails' tails, some sprites are off
 
 can't compile for REV2 due to errors
 
