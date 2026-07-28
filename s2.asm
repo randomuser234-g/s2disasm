@@ -91940,11 +91940,14 @@ Tails_SetFlyingAnimation:
 Tails_FlyAnimNoTimer:
 		clr.b	(Tails_CPU_jumping).w		;clear cpu thing, prevent spam of jump
 		btst	#status.player.underwater,status(a0)			;underwater?	
-		bne.s	.underwater			;if yes, play underwater animations
+		bne.w	.underwater			;if yes, play underwater animations
+		cmpi.w	#4,(Tails_CPU_routine).w	; is tails flying in?
+		beq.s	.nottired			;if yes, ignore other animations
 		cmpi.b	#1,(Tails_carrying_Sonic).w		;carrying sonic?
 		beq.s	.carry				;if yes, carrying animation
 		cmpi.b	#0,(Tails_flight_timer).w		;out of time?
 		beq.s	.flytired			;if yes, tired animation
+.nottired:
 		move.b	#AniIDTailsAni_Fly,anim(a0)
 .sound:
 		;sound effect
@@ -91952,8 +91955,11 @@ Tails_FlyAnimNoTimer:
 		addq.b	#8,d0
 		andi.b	#$F,d0
 		bne.s	.skipsound
+		cmpi.w	#4,(Tails_CPU_routine).w	; is tails flying in?
+		beq.s	.normalsound			;if yes, ignore other animations
 		cmpi.b	#0,(Tails_flight_timer).w		;out of time?
 		beq.s	.tiredsound			;if yes, tired animation
+.normalsound
 		move.w	#SndID_Flying,d0
 		jsr	(PlaySound).l
 		rts
@@ -91982,11 +91988,16 @@ Tails_FlyAnimNoTimer:
 
 		rts
 .underwater:
+		cmpi.w	#4,(Tails_CPU_routine).w	; is tails flying in?
+		beq.s	.nottired2			;if yes, ignore other animations
 		cmpi.b	#1,(Tails_carrying_Sonic).w		;carrying sonic?
 		beq.s	.swimcarry				;if yes, carrying animation
 		cmpi.b	#0,(Tails_flight_timer).w		;out of time
 		beq.s	.swimtired			;if yes, tired animation
+.nottired2:
 		move.b	#AniIDTailsAni_Swim,anim(a0)
+		cmpi.w	#4,(Tails_CPU_routine).w	; is tails flying in?
+		beq.s	.skipsound			;if yes, ignore other animations
 		tst.w	y_vel(a0)			;flying higher?
 		bpl.s	.skipsound				;if not, don't do anim
 		move.b	#AniIDTailsAni_SwimUp,anim(a0)		;otherwise, carry up animation
