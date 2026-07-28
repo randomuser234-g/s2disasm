@@ -45,8 +45,6 @@ the clone sonic's palette can look off
 
 the clone sonic copies current frame rather than at the time of the action, desync in action vs animation
 
-if tails is despawning without resetting on floor or flying for the first time, he is considered tired
-
 clone doesn't copy tails' tails, some sprites are off
 
 can't compile for REV2 due to errors
