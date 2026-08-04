@@ -39451,42 +39451,6 @@ Obj02_MdNormal:
 ; Called if Tails is airborne, but not in a ball (thus, probably not jumping)
 ; loc_1C032: Obj02_MdJump
 Obj02_MdAir:
-	bsr.w	Tails_JumpHeight
-	bsr.w	Tails_ChgJumpDir
-	bsr.w	Tails_LevelBound
-	jsr	(ObjectMoveAndFall).l
-	btst	#status.player.underwater,status(a0)	; is Tails underwater?
-	beq.s	+					; if not, branch
-	subi.w	#$28,y_vel(a0)	; reduce gravity by $28 ($38-$28=$10)
-+
-	bsr.w	Tails_JumpAngle
-	bsr.w	Tails_DoLevelCollision
-	rts
-; End of subroutine Obj02_MdAir
-; ===========================================================================
-; Start of subroutine Obj02_MdRoll
-; Called if Tails is in a ball, but not airborne (thus, probably rolling)
-; loc_1C05C:
-Obj02_MdRoll:
-	tst.b	pinball_mode(a0)
-	bne.s	+
-	bsr.w	Tails_Jump
-+
-	bsr.w	Tails_RollRepel
-	bsr.w	Tails_RollSpeed
-	bsr.w	Tails_LevelBound
-	jsr	(ObjectMove).l
-	bsr.w	AnglePos
-	bsr.w	Tails_SlopeRepel
-	rts
-; End of subroutine Obj02_MdRoll
-; ===========================================================================
-; Start of subroutine Obj02_MdJump
-; Called if Tails is in a ball and airborne (he could be jumping but not necessarily)
-; Notes: This is identical to Obj02_MdAir, at least at this outer level.
-;        Why they gave it a separate copy of the code, I don't know.
-; loc_1C082: Obj02_MdJump2:
-Obj02_MdJump:
         tst.b   (Tails_doublejump).w                  
         bne.s   .flying
 	move.b	#0,(Tails_carrying_Sonic).w	;dont hold sonic
@@ -39525,6 +39489,42 @@ Obj02_MdJump:
 	beq.s	.end			; if not, branch
 	move.b	#AniIDSonAni_Roll,anim(a0)
 		rts
+; End of subroutine Obj02_MdAir
+; ===========================================================================
+; Start of subroutine Obj02_MdRoll
+; Called if Tails is in a ball, but not airborne (thus, probably rolling)
+; loc_1C05C:
+Obj02_MdRoll:
+	tst.b	pinball_mode(a0)
+	bne.s	+
+	bsr.w	Tails_Jump
++
+	bsr.w	Tails_RollRepel
+	bsr.w	Tails_RollSpeed
+	bsr.w	Tails_LevelBound
+	jsr	(ObjectMove).l
+	bsr.w	AnglePos
+	bsr.w	Tails_SlopeRepel
+	rts
+; End of subroutine Obj02_MdRoll
+; ===========================================================================
+; Start of subroutine Obj02_MdJump
+; Called if Tails is in a ball and airborne (he could be jumping but not necessarily)
+; Notes: This is identical to Obj02_MdAir, at least at this outer level.
+;        Why they gave it a separate copy of the code, I don't know.
+; loc_1C082: Obj02_MdJump2:
+Obj02_MdJump:
+	bsr.w	Tails_JumpHeight
+	bsr.w	Tails_ChgJumpDir
+	bsr.w	Tails_LevelBound
+	jsr	(ObjectMoveAndFall).l
+	btst	#status.player.underwater,status(a0)	; is Tails underwater?
+	beq.s	.afterunderwater					; if not, branch
+	subi.w	#$28,y_vel(a0)	; reduce gravity by $28 ($38-$28=$10)
+.afterunderwater:
+	bsr.w	Tails_JumpAngle
+	bsr.w	Tails_DoLevelCollision
+	rts
 ; End of subroutine Obj02_MdJump
 
 ; ---------------------------------------------------------------------------
@@ -91800,9 +91800,9 @@ Tails_Flight:
 		beq.s	rts_TailsFlight		;if yes, don't fly
 .skipcpucheck:
 		; we already checked this earlier...
-		;btst	#2,status(a0)
-		;beq.s	Offset_0x00E382
-		;bclr	#2,status(a0)
+		btst	#2,status(a0)
+		beq.s	Offset_0x00E382
+		bclr	#2,status(a0)
 		;move.b	Obj_Height_2(a0),d1			
 		;move.b	Obj_Height_3(a0),Obj_Height_2(a0)
 		;move.b	Obj_Width_3(a0),Obj_Width_2(a0)
