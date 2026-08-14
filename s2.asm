@@ -92067,6 +92067,10 @@ Tails_CarrySonic:	;code copied from obj7F, one of vines in mystic cave zone
 	tst.w	(Debug_placement_mode).w		;debug used?
 	bne.w	.stopcarryingsonic		;if yes, stop carrying sonic
 
+	tst.b	(Tails_carrying_Sonic).w	;carrying sonic?
+	bne.s	.chkdistance		;if yes, check distance between the two with old parameters
+
+;different behavior when first grabbed, stricter
 	move.w	x_pos(a1),d0
 	sub.w	x_pos(a0),d0
 	addi.w	#$C,d0
@@ -92074,9 +92078,30 @@ Tails_CarrySonic:	;code copied from obj7F, one of vines in mystic cave zone
 	bhs.w	.stopcarryingsonic
 	move.w	y_pos(a1),d1
 	sub.w	y_pos(a0),d1
-	subi.w	#$19,d1		;28
-	cmpi.w	#$D,d1		;10
+	subi.w	#$1E,d1		;30
+	cmpi.w	#$10,d1		;16
 	bhs.w	.stopcarryingsonic
+	bra.s	.leftorright
+.chkdistance:
+;old behavior when already grabbed
+	btst	#status.player.in_air,status(a1)	;is sonic airborne?
+	beq.w	.stopcarryingsonic	;if he isn't make sure to cancel
+
+	btst	#status.player.on_object,status(a1)	;is sonic on an object?
+	bne.w	.stopcarryingsonic	;if he is make sure to cancel
+
+	move.w	x_pos(a1),d0
+	sub.w	x_pos(a0),d0
+	addi.w	#$C,d0
+	cmpi.w	#$18,d0
+	bhs.w	.bumpandstopcarryingsonic
+	move.w	y_pos(a1),d1
+	sub.w	y_pos(a0),d1
+	subi.w	#$19,d1		;25
+	cmpi.w	#$D,d1		;13
+	bhs.w	.stopcarryingsonic
+
+.leftorright:
 	;face left or right
 	btst	#0,status(a0)		;tails facing left?
 	bne.s	.notleft		;if not, don't face left
@@ -92108,6 +92133,9 @@ Tails_CarrySonic:	;code copied from obj7F, one of vines in mystic cave zone
 	beq.s	.end			; if not, branch
 	move.b	#AniIDSonAni_Roll,anim(a1)
 	move.b	#AniIDSonAni_Roll,anim(a0)
+	bra.s	.stopcarryingsonic
+.bumpandstopcarryingsonic:
+	move.w	#-$100,y_vel(a1)
 .stopcarryingsonic:
 	move.b	#0,(Tails_carrying_Sonic).w
 		rts
