@@ -37903,6 +37903,7 @@ Sonic_ResetOnFloor_Part2:
 	subq.w	#5,y_pos(a0)	; move Sonic up 5 pixels so the increased height doesn't push him into the ground
 ; loc_1B0DA:
 Sonic_ResetOnFloor_Part3:
+	clr.b	(Tails_carrying_Sonic).w	; clear carrying Sonic flag
 	bclr	#status.player.in_air,status(a0)
 	bclr	#status.player.pushing,status(a0)
 	bclr	#status.player.rolljumping,status(a0)
@@ -40884,6 +40885,7 @@ Tails_ResetOnFloor_Part2:
 	subq.w	#1,y_pos(a0)	; move Tails up 1 pixel so the increased height doesn't push him slightly into the ground
 ; loc_1CB80:
 Tails_ResetOnFloor_Part3:
+	clr.b	(Tails_carrying_Sonic).w	; clear carrying Sonic flag
 	bclr	#status.player.in_air,status(a0)
 	bclr	#status.player.pushing,status(a0)
 	bclr	#status.player.rolljumping,status(a0)
@@ -92049,6 +92051,28 @@ rts_SonicInstaShield:
 		rts
 
 Tails_CarrySonic:	;code copied from obj7F, one of vines in mystic cave zone
+	tst.b	spindash_flag(a1)	;already started peelout?
+	bne.w	.stopcarryingsonic	;if yes, don't carry sonic
+
+	;tst.b	(Sonic_doublejump).w	;already started mid air ability?
+	;bne.w	.stopcarryingsonic	;if yes, don't carry sonic
+
+	tst.b	(WindTunnel_flag).w	;wind tunnel active?
+	bne.w	.stopcarryingsonic		;if yes, stop carrying sonic
+
+	tst.b	obj_control(a1)	;controlled by objects?
+	bmi.w	.stopcarryingsonic		;if yes, stop carrying sonic
+
+	cmpi.b	#4,routine(a1)	;is sonic alive?
+	bhs.w	.stopcarryingsonic		;if not, stop carrying sonic
+
+	tst.w	(Debug_placement_mode).w		;debug used?
+	bne.w	.stopcarryingsonic		;if yes, stop carrying sonic
+
+	tst.b	(Tails_carrying_Sonic).w	;is tails already carrying sonic?
+	bne.w	.chkspeed		;if yes, skip coordinate checks
+
+
 	move.w	x_pos(a1),d0
 	sub.w	x_pos(a0),d0
 	addi.w	#$C,d0
@@ -92056,15 +92080,28 @@ Tails_CarrySonic:	;code copied from obj7F, one of vines in mystic cave zone
 	bhs.w	.stopcarryingsonic
 	move.w	y_pos(a1),d1
 	sub.w	y_pos(a0),d1
-	subi.w	#$19,d1		;28
-	cmpi.w	#$D,d1		;10
+	subi.w	#$20,d1		;28
+	cmpi.w	#$10,d1		;10
 	bhs.w	.stopcarryingsonic
-	tst.b	obj_control(a1)
-	bmi.w	.stopcarryingsonic
-	cmpi.b	#4,routine(a1)
-	bhs.w	.stopcarryingsonic
-	tst.w	(Debug_placement_mode).w
-	bne.w	.stopcarryingsonic
+	bra.s	.leftorright
+.chkspeed:
+	btst	#status.player.in_air,status(a1)	;in the air?
+	beq.w	.stopcarryingsonic			;if not,stop carrying sonic
+	btst	#status.player.on_object,status(a1)	;on an object?
+	bne.w	.stopcarryingsonic			;if yes, stop carrying sonic
+	move.w	x_pos(a1),d0		;distance between players
+	sub.w	x_pos(a0),d0
+	addi.w	#$10,d0
+	cmpi.w	#$20,d0			;is sonic a certain distance toward tails?
+	bhs.w	.bumpandstopcarryingsonic		;if not, stop carrying sonic
+	;with these values, seems to be about sonic's hand at tails outward shoe before detach
+	
+	move.w	y_pos(a1),d0		;distance between players
+	sub.w	y_pos(a0),d0
+	cmpi.w	#$30,d0			;is sonic a certain distance toward tails?
+	bhs.w	.stopcarryingsonic		;if not, stop carrying sonic
+
+.leftorright:
 	;face left or right
 	btst	#0,status(a0)		;tails facing left?
 	bne.s	.notleft		;if not, don't face left
@@ -92075,10 +92112,10 @@ Tails_CarrySonic:	;code copied from obj7F, one of vines in mystic cave zone
 .afterdirections:
 	;be airborne
 	btst	#1,status(a0)		;tails in the air?
-	bne.s	.notairborne		;if not, don't be airborne
-	bclr	#1,status(a1)		;try to copy being in the air
+	bne.s	.isairborne		;if yes, be airborne
+	bclr	#1,status(a1)		;try to copy not being in the air
 	bra.s	.afteraircheck
-.notairborne:
+.isairborne:
 	bset	#1,status(a1)		;try to copy being in the air
 .afteraircheck:
 	clr.w	x_vel(a1)
@@ -92096,6 +92133,9 @@ Tails_CarrySonic:	;code copied from obj7F, one of vines in mystic cave zone
 	beq.s	.end			; if not, branch
 	move.b	#AniIDSonAni_Roll,anim(a1)
 	move.b	#AniIDSonAni_Roll,anim(a0)
+	bra.s	.stopcarryingsonic
+.bumpandstopcarryingsonic:
+	move.w	#-$100,y_vel(a1)		; make a slight upwards push
 .stopcarryingsonic:
 	move.b	#0,(Tails_carrying_Sonic).w
 		rts
