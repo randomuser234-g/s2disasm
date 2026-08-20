@@ -812,6 +812,7 @@ ObjID_EndingSeqBird =		id(ObjPtr_EndingSeqBird)	; CD
 ObjID_EndingSeqSonic =		id(ObjPtr_EndingSeqSonic)	; CE
 ObjID_EndingSeqTails =		id(ObjPtr_EndingSeqTails)	; CE
 ObjID_TornadoHelixes =		id(ObjPtr_TornadoHelixes)	; CF
+ObjID_Knuckles	=		id(ObjPtr_Knuckles)	; CF
 ObjID_CNZRectBlocks =		id(ObjPtr_CNZRectBlocks)	; D2
 ObjID_BombPrize =		id(ObjPtr_BombPrize)		; D3
 ObjID_CNZBigBlock =		id(ObjPtr_CNZBigBlock)		; D4
@@ -1512,8 +1513,7 @@ Tails_flight_timer:		ds.b	1	; timer to cancel flight
 ; extra variables for the second player (CPU) in 1-player mode
 Tails_control_counter:		ds.w	1	; how long until the CPU takes control
 Tails_respawn_counter:		ds.w	1
-Player1_character_id:		ds.b	1	; unused, now used for who is who
-				ds.b	1	; unused
+				ds.b	2	; unused
 Tails_CPU_routine:		ds.w	1
 Tails_CPU_target_x:		ds.w	1
 Tails_CPU_target_y:		ds.w	1
@@ -1853,7 +1853,8 @@ Player_mode:			ds.w	1	; 0 = Sonic and Tails, 1 = Sonic, 2 = Tails
 Player_option:			ds.w	1	; 0 = Sonic and Tails, 1 = Sonic, 2 = Tails
 
 Two_player_items:		ds.w	1
-				ds.b	$A	; $FFFFFF76-$FFFFFF7F ; seems unused
+Player1_character_id:		ds.b	1	; unused, now used for who is who
+				ds.b	$9	; $FFFFFF76-$FFFFFF7F ; seems unused
 
 LevSel_HoldTimer:		ds.w	1
 Level_select_zone:		ds.w	1

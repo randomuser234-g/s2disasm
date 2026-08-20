@@ -5232,6 +5232,8 @@ InitPlayers_Alone: ; either Sonic or Tails but not both
 ; ===========================================================================
 ; loc_44D0:
 InitPlayers_TailsAlone:
+	subq.w	#1,d0
+	bne.s	InitPlayers_KnuxAndTails ; branch if this is a Tails alone game
 	move.b	#ObjID_Tails,(MainCharacter+id).w ; load Obj02 Tails object at $FFFFB000
 	move.b	#ObjID_SpindashDust,(Tails_Dust+id).w ; load Obj08 Tails' spindash dust/splash object at $FFFFD100
 	addi_.w	#4,(MainCharacter+y_pos).w
@@ -5243,7 +5245,42 @@ InitPlayers_TailsAlone:
 	rts
 ; End of function InitPlayers
 
+InitPlayers_KnuxAndTails:
+	subq.w	#1,d0
+	bne.s	InitPlayers_KnuxAlone ; branch if this is a Knuckles and Tails game
+	move.b	#ObjID_Knuckles,(MainCharacter+id).w ; load Obj01 Sonic object at $FFFFB000
+	move.b	#ObjID_SpindashDust,(Sonic_Dust+id).w ; load Obj08 Sonic's spindash dust/splash object at $FFFFD100
 
+	cmpi.b	#wing_fortress_zone,(Current_Zone).w
+	beq.s	+ ; skip loading Tails if this is WFZ
+	cmpi.b	#death_egg_zone,(Current_Zone).w
+	beq.s	+ ; skip loading Tails if this is DEZ
+	cmpi.b	#sky_chase_zone,(Current_Zone).w
+	beq.s	+ ; skip loading Tails if this is SCZ
+
+	move.b	#ObjID_Tails,(Sidekick+id).w ; load Obj02 Tails object at $FFFFB040
+	move.w	(MainCharacter+x_pos).w,(Sidekick+x_pos).w
+	move.w	(MainCharacter+y_pos).w,(Sidekick+y_pos).w
+	subi.w	#$20,(Sidekick+x_pos).w
+	addi_.w	#4,(Sidekick+y_pos).w
+	move.b	#ObjID_SpindashDust,(Tails_Dust+id).w ; load Obj08 Tails' spindash dust/splash object at $FFFFD140
++
+    if yourpast
+	move.b	#ObjID_CloneSonic,(Sonic_Shield+id).w ; load ObjBB clone Sonic object at shield
+    else
+	nop
+    endif
+	rts
+
+InitPlayers_KnuxAlone:
+	move.b	#ObjID_Knuckles,(MainCharacter+id).w ; load Obj01 Sonic object at $FFFFB000
+	move.b	#ObjID_SpindashDust,(Sonic_Dust+id).w ; load Obj08 Sonic's spindash dust/splash object at $FFFFD100
+    if yourpast
+	move.b	#ObjID_CloneSonic,(Sonic_Shield+id).w ; load ObjBB clone Sonic object at shield
+    else
+	nop
+    endif
+	rts
 
 
 
@@ -5522,6 +5559,8 @@ WindTunnel:
 	cmpi.b	#4,routine(a1)		; is the main character hurt, dying, etc. ?
 	bhs.s	WindTunnel_LeaveHurt	; if yes, branch
 	move.b	#1,(WindTunnel_flag).w	; affects character animation and bubble movement
+	clr.b	double_jump_flag(a1)	; clear gliding flag
+	clr.b	jumping(a1)	; clear jumping flag
 	subi_.w	#4,x_pos(a1)	; move main character to the left
 	move.w	#-$400,x_vel(a1)
 	move.w	#0,y_vel(a1)
@@ -12277,7 +12316,7 @@ OptionScreen_Controls:
 ; ===========================================================================
 ; word_917A:
 OptionScreen_Choices:
-	dc.l (3-1)<<24|(Player_option&$FFFFFF)
+	dc.l (5-1)<<24|(Player_option&$FFFFFF)
 	dc.l (2-1)<<24|(Two_player_items&$FFFFFF)
 	dc.l ($80-1)<<24|(Sound_test_sound&$FFFFFF)
 
@@ -12417,10 +12456,15 @@ off_92D2:
 	dc.l TextOptScr_SonicAndMiles
 	dc.l TextOptScr_SonicAlone
 	dc.l TextOptScr_MilesAlone
+	dc.l TextOptScr_KnuxAndMiles
+	dc.l TextOptScr_KnuxAlone
+
 off_92DE:
 	dc.l TextOptScr_SonicAndTails
 	dc.l TextOptScr_SonicAlone
 	dc.l TextOptScr_TailsAlone
+	dc.l TextOptScr_KnuxAndTails
+	dc.l TextOptScr_KnuxAlone
 off_92EA:
 	dc.l TextOptScr_AllKindsItems
 	dc.l TextOptScr_TeleportOnly
@@ -12988,6 +13032,9 @@ TextOptScr_SonicAndTails:	menutxt	"SONIC AND TAILS"	; byte_97EC:
 TextOptScr_SonicAlone:		menutxt	"SONIC ALONE    "	; byte_97FC:
 TextOptScr_MilesAlone:		menutxt	"MILES ALONE    "	; byte_980C:
 TextOptScr_TailsAlone:		menutxt	"TAILS ALONE    "	; byte_981C:
+TextOptScr_KnuxAndMiles:	menutxt	"KNUX AND MILES "	; byte_97DC:
+TextOptScr_KnuxAndTails:	menutxt	"KNUX AND TAILS "	; byte_97EC:
+TextOptScr_KnuxAlone:		menutxt	"KNUCKLES ALONE "	; byte_97FC:
 TextOptScr_VsModeItems:		menutxt	"* VS MODE ITEMS *"	; byte_982C:
 TextOptScr_AllKindsItems:	menutxt	"ALL KINDS ITEMS"	; byte_983E:
 TextOptScr_TeleportOnly:	menutxt	"TELEPORT ONLY  "	; byte_984E:
@@ -13471,7 +13518,13 @@ ObjCA_State5_States:	offsetTable
 loc_A2E0:
 	moveq	#8,d0
 -
+	cmpi.w	#3,(Player_mode).w	;knuckles/knux and tails?
+	bge.s	.knux			;if yes, load knuckles "object"
 	move.b	#ObjID_Sonic,id(a1) ; load Sonic object
+	bra.s	.charpicked
+.knux:
+	move.b	#ObjID_Knuckles,id(a1) ; load Knuckles object (id only, branches to sonic's code)
+.charpicked:
 	move.b	#$81,obj_control(a1)
 	rts
 ; ===========================================================================
@@ -25476,6 +25529,12 @@ SolidObject_Monitor_Sonic:
 	beq.w	.nocol		; if yes, branch
 	cmpi.b	#AniIDSonAni_InstaShield,anim(a1)		; is Sonic instashield?
 	beq.w	.nocol		; if yes, branch
+	cmpi.b	#ObjID_Knuckles,id(a0)			; Is player Knuckles?
+	bne.w	SolidObject_cont			; If not, branch
+	cmpi.b	#1,double_jump_flag(a0)			; gliding?
+	beq.s	.nocol				;if yes, branch
+	cmpi.b	#3,double_jump_flag(a0)			;sliding?	
+	beq.s	.nocol
 	bra.w	SolidObject_cont		; otherwise, solid object
 .nocol:
 	rts
@@ -30015,7 +30074,7 @@ ObjPtr_EndingSeqBird:	dc.l ObjCD	; Birds from ending sequence
 ObjPtr_EndingSeqSonic:
 ObjPtr_EndingSeqTails:	dc.l ObjCE	; Sonic and Tails jumping off the plane from ending sequence
 ObjPtr_TornadoHelixes:	dc.l ObjCF	;"Plane's helixes" from ending sequence
-			dc.l ObjNull	; ObjD0
+ObjPtr_Knuckles:	dc.l ObjD0	; "knuckles"
 			dc.l ObjNull	; ObjD1
 ObjPtr_CNZRectBlocks:	dc.l ObjD2	; Flashing blocks that appear and disappear in a rectangular shape that you can walk across, from CNZ
 ObjPtr_BombPrize:	dc.l ObjD3	; Bomb prize from CNZ
@@ -35963,7 +36022,13 @@ Obj01_Index:	offsetTable
 ; ===========================================================================
 ; loc_19F76: Obj_01_Sub_0: Obj01_Main:
 Obj01_Init:
+	move.b	#0,(Player1_character_id).w		;0 for sonic, 1 for tails, 2 for knuckles
+	cmpi.b	#ObjID_Knuckles,id(a0)			;is thsi knuckles?
+	beq.s	.knuxpicked				;if yes load his assets 
+	bra.s	.charpicked				;otherwise sonic
+.knuxpicked:
 	move.b	#2,(Player1_character_id).w		;0 for sonic, 1 for tails, 2 for knuckles
+.charpicked:
 	addq.b	#2,routine(a0)	; => Obj01_Control
 	move.b	#$13,y_radius(a0) ; this sets Sonic's collision height (2*pixels)
 	move.b	#9,x_radius(a0)
@@ -39526,8 +39591,8 @@ Obj02_MdAir:
                 movem.l A4-A6, -(A7)
                 bsr     Tails_DoLevelCollision                           ; Offset_0x00E5F0
                 movem.l (A7)+, A4-A6
-                cmpi.w  #$0000, (Player_mode).w             ; sonic and tails game?
-                bne.s   .dontflysonic
+                cmpi.w  #$0002, (Player_mode).w             ; tails alone game?
+                beq.s   .dontflysonic				;if yes, branch
 		lea	(MainCharacter).w,a1 ; a1=character
 		move.w	(Ctrl_1).w,d0
 		jsr	Tails_CarrySonic
@@ -42726,6 +42791,11 @@ Obj08_CheckSkid:
 	movea.w	parent(a0),a2 ; a2=character
 	cmpi.b	#AniIDSonAni_Stop,anim(a2)	; SonAni_Stop
 	beq.s	Obj08_SkidDust
+	cmpi.b	#ObjID_Knuckles,id(a2)	;is knuckles?
+	bne.s	.skipdust		;if yes, branch
+	cmpi.b	#3,double_jump_flag(a2)		;sliding?
+	beq.s	Obj08_SkidDust			;if yes, dust
+.skipdust:
 	move.b	#2,routine(a0)
 	move.b	#0,obj08_dust_timer(a0)
 	rts
@@ -46865,6 +46935,7 @@ loc_212C4:
 	move.b	#7,x_radius(a1)
 	move.b	#AniIDSonAni_Roll,anim(a1)
 	addq.w	#5,y_pos(a1)
+	clr.b	double_jump_flag(a1)	; clear gliding flag
 	move.w	#SndID_Roll,d0
 	jsr	(PlaySound).l
 	rts
@@ -53324,6 +53395,8 @@ loc_2704C:
 	move.b	#AniIDSonAni_Walk,anim(a1)
 	move.b	#1,flips_remaining(a1)
 	move.b	#8,flip_speed(a1)
+	clr.b	double_jump_flag(a1)	; clear gliding flag
+	clr.b	jumping(a1)	; clear jumping flag
 	btst	#1,d0
 	bne.s	+
 	move.b	#3,flips_remaining(a1)
@@ -57769,7 +57842,7 @@ BranchTo2_JmpTo26_MarkObjGone ; BranchTo
 
 loc_2A990:
 	cmpi.b	#4,routine(a1)
-	bhs.s	return_2AA10
+	bhs.w	return_2AA10
 	tst.b	obj_control(a1)
 	bne.s	return_2AA10
 	move.w	x_pos(a1),d0
@@ -57803,6 +57876,8 @@ loc_2A990:
 	move.b	#AniIDSonAni_Walk,anim(a1)
 	move.b	#$7F,flips_remaining(a1)
 	move.b	#8,flip_speed(a1)
+	clr.b	double_jump_flag(a1)	; clear gliding flag
+	clr.b	jumping(a1)	; clear jumping flag
 
 return_2AA10:
 	rts
@@ -78947,6 +79022,9 @@ ObjB2_Wait_for_plane:
 	move.w	#$100,x_vel(a0)
 	move.w	#-$100,y_vel(a0)
 	clr.w	objoff_2A(a0)
+	cmpi.b	#ObjID_Knuckles,(MainCharacter).w	; is this Knuckles?
+	bne.w	ObjB2_Waiting_animation		; if not, branch
+	move.w	#$10,objoff_2A(a0)		; make jump delay shorter
 	bra.w	ObjB2_Waiting_animation
 ; ===========================================================================
 ; loc_3AA74:
@@ -79007,7 +79085,7 @@ loc_3AB18:
 	clr.w	inertia(a1)
 	bclr	#status.player.in_air,status(a1)
 	bclr	#status.player.rolling,status(a1)
-	move.l	#(1<<24)|(0<<16)|(AniIDSonAni_Wait<<8)|(AniIDSonAni_Wait<<0),mapping_frame(a1)
+	move.w	#AniIDSonAni_Wait<<8,anim(a1)	; set and force standing animation
 	move.w	#$100,anim_frame_duration(a1)
 	move.b	#$13,y_radius(a1)
 	cmpi.w	#2,(Player_mode).w
@@ -79117,7 +79195,7 @@ ObjB2_Deactivate_level:
 ; loc_3AC56:
 ObjB2_Waiting_animation:
 	lea	(MainCharacter).w,a1 ; a1=character
-	move.l	#(1<<24)|(0<<16)|(AniIDSonAni_Wait<<8)|(AniIDSonAni_Wait<<0),mapping_frame(a1)
+	move.w	#AniIDSonAni_Wait<<8,anim(a1)	; set and force standing animation
 	move.w	#$100,anim_frame_duration(a1)
 	rts
 ; ===========================================================================
@@ -79697,7 +79775,7 @@ ObjB5_Animate:
 ; loc_3B456:
 ObjB5_CheckPlayers:
 	cmpi.b	#4,anim(a0)
-	bne.s	++	; rts
+	bne.w	++	; rts
 	lea	(MainCharacter).w,a1 ; a1=character
 	bsr.w	ObjB5_CheckPlayer
 	lea	(Sidekick).w,a1 ; a1=character
@@ -79707,7 +79785,7 @@ ObjB5_CheckPlayer:
 	sub.w	x_pos(a0),d0
 	addi.w	#$40,d0
 	cmpi.w	#$80,d0
-	bhs.s	++	; rts
+	bhs.w	++	; rts
 	moveq	#0,d1
 	move.b	(Oscillating_Data+$14).w,d1
 	add.w	y_pos(a1),d1
@@ -79734,6 +79812,8 @@ ObjB5_CheckPlayer:
 	move.b	#AniIDSonAni_Float2,anim(a1)
 	move.b	#$7F,flips_remaining(a1)
 	move.b	#8,flip_speed(a1)
+	clr.b	double_jump_flag(a1)	; clear gliding flag
+	clr.b	jumping(a1)	; clear jumping flag
 +
 	rts
 ; ===========================================================================
@@ -85252,6 +85332,13 @@ Touch_Monitor:
 	beq.s	.monitorhit
 	cmpi.b	#AniIDSonAni_InstaShield,anim(a0)	;is sonic instashield? if yes, break
 	beq.s	.monitorhit
+.knux:
+	cmpi.b	#ObjID_Knuckles,id(a0)			; Is player Knuckles?
+	bne.w	return_3F78A				; If not, branch
+	cmpi.b	#1,double_jump_flag(a0)			; gliding?
+	beq.s	.monitorhit				;if yes, branch
+	cmpi.b	#3,double_jump_flag(a0)			;sliding?	
+	beq.s	.monitorhit
 	bra.s	return_3F78A	;if neither, than do nothing
 .monitorhit:
 	neg.w	y_vel(a0)	; reverse Sonic's y-motion
@@ -85264,16 +85351,16 @@ return_3F78A:
 ; loc_3F78C:
 Touch_Enemy:
 	btst	#status_secondary.invincible,status_secondary(a0)	; is Sonic invincible?
-	bne.s	+			; if yes, branch
+	bne.s	.donthurtsonic			; if yes, branch
 	cmpi.b	#AniIDSonAni_Spindash,anim(a0)
-	beq.s	+
+	beq.s	.donthurtsonic
 	cmpi.b	#AniIDSonAni_InstaShield,anim(a0)	; is Sonic insta shield?
-	beq.s	+		; if yes, branch
+	beq.s	.donthurtsonic		; if yes, branch
 	cmpi.b	#AniIDSonAni_Roll,anim(a0)		; is Sonic rolling?
-	beq.w	+		; if yes, hurt the enemy
+	beq.w	.donthurtsonic		; if yes, hurt the enemy
 		;s3 final tails code
 		cmpi.b	#ObjID_Tails,id(a0)			; Is player Tails?
-		bne.w	Touch_ChkHurt				; If not, branch
+		bne.w	.knux				; If not, branch
 		tst.b	double_jump_flag(a0)			; Is Tails flying ("gravity-affected")?
 		beq.w	Touch_ChkHurt				; If not, branch
 		btst	#status.player.underwater,status(a0)		; Is Tails underwater?
@@ -85286,8 +85373,17 @@ Touch_Enemy:
 		subi.b	#$20,d0
 		cmpi.b	#$40,d0					;above Tails?
 		bhs.w	Touch_ChkHurt				;if not, branch
+		bra.s	.donthurtsonic
+.knux:
+		cmpi.b	#ObjID_Knuckles,id(a0)			; Is player Knuckles?
+		bne.w	Touch_ChkHurt				; If not, branch
+		cmpi.b	#1,double_jump_flag(a0)			; gliding?
+		beq.s	.donthurtsonic				;if yes, branch
+		cmpi.b	#3,double_jump_flag(a0)			;sliding?	
+		beq.s	.donthurtsonic
+		bra.w	Touch_ChkHurt
 
-+
+.donthurtsonic:
 	btst	#render_flags.multi_sprite,render_flags(a1)
 	beq.s	Touch_Enemy_Part2
 	tst.b	boss_hitcount2(a1)
@@ -85304,6 +85400,24 @@ return_3F7C6:
 Touch_Enemy_Part2:
 	tst.b	collision_property(a1)
 	beq.s	Touch_KillEnemy
+
+		; knuckles specific code
+		cmpi.b	#ObjID_Knuckles,id(a0)			; Is player Knuckles?
+		bne.w	.notgliding				; If not, branch
+		cmpi.b	#1,double_jump_flag(a0)			; gliding?
+		bne.s	.notgliding				;if not, branch
+		move.b	#2,double_jump_flag(a0)			;stop gliding
+	move.b	#AniIDKnuxAni_FallAfterGlide,anim(a0)
+	bclr	#status.player.x_flip,status(a0)
+	tst.w	x_vel(a0)
+	bpl.s	.skipleft
+	bset	#status.player.x_flip,status(a0)
+.skipleft:
+	move.b	#19,y_radius(a0)
+	move.b	#9,x_radius(a0)
+
+.notgliding:
+
 	neg.w	x_vel(a0)
 	neg.w	y_vel(a0)
 	move.b	#0,collision_flags(a1)
@@ -93732,6 +93846,13 @@ Sonic_HitFloor2_2:
 return_1B09E_2:
 	rts
 ; End of function Knuckles_DoLevelCollision2
+ObjD0:
+	; a0=character
+	tst.w	(Debug_placement_mode).w	; is debug mode being used?
+	bne.s	.debug			; if not, branch
+	jmp	Obj01_Normal
+.debug:
+	jmp	(DebugMode).l
 	even
 
 ; ===========================================================================
