@@ -1,4 +1,4 @@
-Map_cd1f: mappingsTable
+Map_081f: mappingsTable
 	mappingsTableEntry.w	Map_cd1f_0
 	mappingsTableEntry.w	Map_cd1f_1
 	mappingsTableEntry.w	Map_cd1f_2
@@ -213,10 +213,15 @@ Map_cd1f: mappingsTable
 	mappingsTableEntry.w	Map_cd1f_211
 	mappingsTableEntry.w	Map_cd1f_212
 	mappingsTableEntry.w	Map_cd1f_213
-	mappingsTableEntry.w	Map_cd1f_214
+	mappingsTableEntry.w	Map_081f_214
+	mappingsTableEntry.w	Map_081f_215
+	mappingsTableEntry.w	Map_081f_216
+	mappingsTableEntry.w	Map_081f_217
 	mappingsTableEntry.w	Map_cd1f_215
 	mappingsTableEntry.w	Map_cd1f_216
 	mappingsTableEntry.w	Map_cd1f_217
+	mappingsTableEntry.w	Map_9a4a_218
+	mappingsTableEntry.w	Map_9a4a_219
 
 Map_cd1f_0:	spriteHeader
 Map_cd1f_0_End
@@ -1553,24 +1558,56 @@ Map_cd1f_213:	spriteHeader
  spritePiece -9, -4, 3, 4, 6, 0, 0, 0, 0
 Map_cd1f_213_End
 
-Map_cd1f_214:	spriteHeader
- spritePiece -$E, -$13, 3, 2, 0, 0, 0, 0, 0
- spritePiece -$10, -$D, 4, 4, 6, 0, 0, 0, 0
-Map_cd1f_214_End
+Map_081f_214:	spriteHeader
+ spritePiece -$10, -$10, 4, 4, 0, 0, 0, 0, 0
+ spritePiece -$E, -$15, 3, 2, $10, 0, 0, 0, 0
+Map_081f_214_End
+
+Map_081f_215:	spriteHeader
+ spritePiece -$10, -$10, 4, 4, 0, 0, 0, 0, 0
+ spritePiece $D, -$E, 2, 3, $10, 0, 0, 0, 0
+Map_081f_215_End
+
+Map_081f_216:	spriteHeader
+ spritePiece -$10, -$10, 4, 4, 0, 0, 0, 0, 0
+ spritePiece -$A, 5, 3, 2, $10, 1, 1, 0, 0
+Map_081f_216_End
+
+Map_081f_217:	spriteHeader
+ spritePiece -$10, -$10, 4, 4, 0, 0, 0, 0, 0
+ spritePiece -$1D, -$A, 2, 3, $10, 1, 1, 0, 0
+Map_081f_217_End
 
 Map_cd1f_215:	spriteHeader
- spritePiece $D, -$A, 2, 4, 0, 0, 0, 0, 0
- spritePiece -$10, -$D, 4, 4, 8, 0, 0, 0, 0
+ spritePiece -$10, -$18, 3, 3, 0, 0, 0, 0, 0
+ spritePiece -$18, -$10, 1, 2, 9, 0, 0, 0, 0
+ spritePiece -$20, 0, 3, 2, $B, 0, 0, 0, 0
+ spritePiece -8, 0, 1, 1, $11, 0, 0, 0, 0
+ spritePiece -$18, $10, 1, 1, $12, 0, 0, 0, 0
 Map_cd1f_215_End
 
 Map_cd1f_216:	spriteHeader
- spritePiece -$A, 9, 3, 2, 0, 1, 1, 0, 0
- spritePiece -$10, -$D, 4, 4, 6, 0, 0, 0, 0
+ spritePiece -$10, -$18, 3, 3, 0, 0, 0, 0, 0
+ spritePiece -$18, -$10, 1, 2, 9, 0, 0, 0, 0
+ spritePiece -$10, 0, 2, 2, $B, 0, 0, 0, 0
+ spritePiece -$18, 8, 1, 1, $F, 0, 0, 0, 0
+ spritePiece -$18, $10, 2, 1, $10, 0, 0, 0, 0
 Map_cd1f_216_End
 
 Map_cd1f_217:	spriteHeader
- spritePiece -$1D, -$10, 2, 4, 0, 1, 1, 0, 0
- spritePiece -$10, -$D, 4, 4, 8, 0, 0, 0, 0
+ spritePiece -$10, -$18, 3, 4, 0, 0, 0, 0, 0
+ spritePiece -$10, 8, 3, 3, $C, 0, 0, 0, 0
 Map_cd1f_217_End
+
+Map_9a4a_218:	spriteHeader
+ spritePiece -8, -$18, 3, 3, 0, 0, 0, 0, 0
+ spritePiece 0, 0, 2, 4, 9, 0, 0, 0, 0
+Map_9a4a_218_End
+
+Map_9a4a_219:	spriteHeader
+ spritePiece -8, -$18, 4, 2, 0, 0, 0, 0, 0
+ spritePiece 0, -8, 3, 2, 8, 0, 0, 0, 0
+ spritePiece 8, 8, 3, 2, $E, 0, 0, 0, 0
+Map_9a4a_219_End
 
 	even
