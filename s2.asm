@@ -51,7 +51,7 @@ useFullWaterTables = 0
 ;	| Set to 1 if you've shifted level IDs around or you want water in levels with a level slot below 8
 debugbuild = 1
 ;	| If 1, level select and debug instantly enabled on the title screen
-yourpast = 0
+yourpast = 1
 ;	| If 1,shield is disabled and clone sonic will appear
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -4941,7 +4941,7 @@ Level_TtlCard:
 +
 	moveq	#PalID_BGND,d0
 	bsr.w	PalLoad_ForFade	; load Sonic's palette line
-	bsr.w	LevelSizeLoad
+	jsr	LevelSizeLoad
 	jsrto	JmpTo_DeformBgLayer
 	clr.w	(Vscroll_Factor_FG).w
 	move.w	#-screen_height,(Vscroll_Factor_P2_FG).w
