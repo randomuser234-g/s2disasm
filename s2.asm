@@ -10677,7 +10677,13 @@ ObjDB_Sonic_Init:
 	addq.b	#2,routine(a0) ; => ObjDB_Sonic_Wait
 	move.w	#$9C,x_pos(a0)
 	move.w	#$19C,y_pos(a0)
+	cmpi.w	#3,(Player_mode).w	;is knuckles?
+	bge.s	.knux			;if yes, branch
 	move.l	#MapUnc_Sonic,mappings(a0)
+	bra.s	.charpicked
+.knux:
+	move.l	#MapUnc_Knuckles,mappings(a0)
+.charpicked
 	move.w	#make_art_tile(ArtTile_ArtUnc_Sonic,0,0),art_tile(a0)
 	move.b	#1<<render_flags.level_fg,render_flags(a0)
 	move.b	#2,priority(a0)
@@ -92423,8 +92429,8 @@ KnucklesAniData:		offsetTable
 				offsetTableEntry.w KnucklesAni_Unused_1		; 29 ; $1D
 				offsetTableEntry.w KnucklesAni_Unused_2		; 30 ; $1E
 				offsetTableEntry.w KnucklesAni_Transform	; 31 ; $1F
-				offsetTableEntry.w KnucklesAni_Blank		; 29 ; $20
-				offsetTableEntry.w KnucklesAni_Blank		; 30 ; $21
+				offsetTableEntry.w KnucklesAni_Lying		; 29 ; $20
+				offsetTableEntry.w KnucklesAni_LieDown		; 30 ; $21
 				offsetTableEntry.w KnucklesAni_Spindash		; 29 ; $22	;sonic and tails anims
 				offsetTableEntry.w KnucklesAni_Blank		; 30 ; $23
 				offsetTableEntry.w KnucklesAni_Blank		; 32 ; $24	unused++
@@ -92531,9 +92537,9 @@ KnucklesAni_Unused_1:	dc.b $13,$D0,$D1,$FF
 	rev02even
 KnucklesAni_Unused_2:	dc.b   3,$CF,$C8,$C9,$CA,$CB,$FE,  4
 	rev02even
-KnucklesAni_Unused_3:	dc.b $13,$D0,$D1,$FF
+KnucklesAni_Lying:	dc.b $13,$D2,$D3,$FF
 	rev02even
-KnucklesAni_Unused_4:	dc.b   3,$CF,$C8,$C9,$CA,$CB,$FE,  4
+KnucklesAni_LieDown:	dc.b  $F,$9C,$FD,  0
 	rev02even
 KnucklesAni_Gliding:	dc.b $1F,$C0,$FF
 	rev02even
