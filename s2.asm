@@ -49,9 +49,9 @@ relativeLea = 0|(gameRevision<2)|allOptimizations
 useFullWaterTables = 0
 ;	| If 1, zone offset tables for water levels cover all level slots instead of only slots 8-$F
 ;	| Set to 1 if you've shifted level IDs around or you want water in levels with a level slot below 8
-debugbuild = 0
+debugbuild = 1
 ;	| If 1, level select and debug instantly enabled on the title screen
-yourpast = 1
+yourpast = 0
 ;	| If 1,shield is disabled and clone sonic will appear
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -21952,13 +21952,6 @@ Obj11_Init:
 	move.l	#Obj11_MapUnc_FC70,mappings(a0)
 	move.w	#make_art_tile(ArtTile_ArtNem_EHZ_Bridge,2,0),art_tile(a0)
 	move.b	#3,priority(a0)
-	cmpi.b	#hidden_palace_zone,(Current_Zone).w	; is this an HPZ bridge?
-	bne.s	+			; if not, branch
-	addq.b	#4,routine(a0)
-	move.l	#Obj11_MapUnc_FC28,mappings(a0)
-	move.w	#make_art_tile(ArtTile_ArtNem_HPZ_Bridge,3,0),art_tile(a0)
-+
-	bsr.w	Adjust2PArtPointer
 	move.b	#1<<render_flags.level_fg,render_flags(a0)
 	move.b	#$80,width_pixels(a0)
 	move.w	y_pos(a0),d2
@@ -22165,6 +22158,7 @@ sub_F872:
 	rts
 ; ===========================================================================
 +
+;Bri_MoveSonic:
 	lsr.w	#4,d0
 	move.b	d0,(a0,d5.w)
 	movea.l	Obj11_child1(a0),a2
@@ -22333,7 +22327,7 @@ Obj11_Depress:
 	andi.w	#$F,d3
 	lsl.w	#4,d3
 	lea	(a4,d3.w),a3
-	movea.l	Obj11_child1(a0),a1
+	movea.l	Obj11_child1(a0),a1		;difference
 	lea	sub9_y_pos+next_subspr(a1),a2
 	lea	sub2_y_pos(a1),a1
 
@@ -35969,10 +35963,17 @@ Obj01_Index:	offsetTable
 ; ===========================================================================
 ; loc_19F76: Obj_01_Sub_0: Obj01_Main:
 Obj01_Init:
+	move.b	#2,(Player1_character_id).w		;0 for sonic, 1 for tails, 2 for knuckles
 	addq.b	#2,routine(a0)	; => Obj01_Control
 	move.b	#$13,y_radius(a0) ; this sets Sonic's collision height (2*pixels)
 	move.b	#9,x_radius(a0)
+	cmpi.b	#2,(Player1_character_id).w	;knuckles?
+	beq.s	.knux				;if yes, knuckles
 	move.l	#MapUnc_Sonic,mappings(a0)
+	bra.s	.mapspicked
+.knux:
+	move.l	#MapUnc_Knuckles,mappings(a0)
+.mapspicked
 	move.b	#2,priority(a0)
 	move.b	#$18,width_pixels(a0)
 	move.b	#1<<render_flags.level_fg,render_flags(a0)
@@ -36246,6 +36247,8 @@ Obj01_MdNormal_Checks:
 	move.b	(Ctrl_1_Press_Logical).w,d0
 	andi.b	#button_B_mask|button_C_mask|button_A_mask,d0
 	bne.s	Obj01_MdNormal
+	cmpi.b	#2,(Player1_character_id).w	;is knuckles?
+	beq.s	Obj01_MdNormal				;if yes, skip get up stuff
 	cmpi.b	#AniIDSonAni_Blink,anim(a0)
 	beq.s	return_1A2DE
 	cmpi.b	#AniIDSonAni_GetUp,anim(a0)
@@ -36283,6 +36286,12 @@ return_1A2DE:
 ; Called if Sonic is airborne, but not in a ball (thus, probably not jumping)
 ; loc_1A2E0: Obj01_MdJump
 Obj01_MdAir:
+	cmpi.b	#2,(Player1_character_id).w	;is knuckles?
+	bne.s	.notknux		;if not, branch
+	tst.b	double_jump_flag(a0)		;doublejump active?
+	beq.s	.notknux		;if not, branch
+	jmp	Obj01_MdAir_Gliding	;branch to knuckles gliding code
+.notknux:
 	bsr.w	Sonic_JumpHeight
 	bsr.w	Sonic_ChgJumpDir
 	bsr.w	Sonic_LevelBound
@@ -36385,6 +36394,8 @@ Obj01_NotRight:
 	subq.w	#2,d2
 	add.w	x_pos(a0),d1
 	sub.w	x_pos(a1),d1
+	cmpi.b	#2,(Player1_character_id).w	;is knuckles?
+	beq.w	SuperSonic_Balance			;if yes, skip get up stuff
 	tst.b	(Super_Sonic_flag).w
 	bne.w	SuperSonic_Balance
 	cmpi.w	#2,d1
@@ -36445,6 +36456,8 @@ Sonic_Balance:
 	jsr	(ChkFloorEdge).l
 	cmpi.w	#$C,d1
 	blt.w	Sonic_Lookup
+	cmpi.b	#2,(Player1_character_id).w	;is knuckles?
+	beq.w	SuperSonic_Balance2			;if yes, skip get up stuff
 	tst.b	(Super_Sonic_flag).w
 	bne.w	SuperSonic_Balance2
 	cmpi.b	#3,next_tilt(a0)
@@ -37158,15 +37171,24 @@ Sonic_Jump:
 	bsr.w	CalcRoomOverHead
 	cmpi.w	#6,d1			; does Sonic have enough room to jump?
 	blt.w	return_1AAE6		; if not, branch
+	cmpi.b	#2,(Player1_character_id).w	;is knuckles?
+	beq.w	.knux			;if yes, skip get up stuff
 	move.w	#$680,d2
 	tst.b	(Super_Sonic_flag).w
-	beq.s	+
+	beq.s	.nosuper
 	move.w	#$800,d2	; set higher jump speed if super
-+
+.nosuper:
 	btst	#status.player.underwater,status(a0)	; Test if underwater
-	beq.s	+
+	beq.s	.notunderwater
 	move.w	#$380,d2	; set lower jump speed if underwater
-+
+	bra.s	.notunderwater
+.knux:
+	move.w	#$600,d2
+	btst	#status.player.underwater,status(a0)	; Test if underwater
+	beq.s	.notunderwater
+	move.w	#$300,d2	; set lower jump speed if underwater
+
+.notunderwater:
 	moveq	#0,d0
 	move.b	angle(a0),d0
 	subi.b	#$40,d0
@@ -37179,7 +37201,7 @@ Sonic_Jump:
 	add.w	d0,y_vel(a0)	; make Sonic jump (in Y)
 	bset	#status.player.in_air,status(a0)
 	bclr	#status.player.pushing,status(a0)
-	move.b	#0,(Sonic_doublejump).w		;doublejump flag
+	move.b	#0,double_jump_flag(a0)		;doublejump flag
 	addq.l	#4,sp
 	move.b	#1,jumping(a0)
 	clr.b	stick_to_convex(a0)
@@ -37891,22 +37913,25 @@ Sonic_ResetOnFloor:
 Sonic_ResetOnFloor_Part2:
 	; some routines outside of Tails' code can call Sonic_ResetOnFloor_Part2
 	; when they mean to call Tails_ResetOnFloor_Part2, so fix that here
-	_cmpi.b	#ObjID_Sonic,id(a0)	; is this object ID Sonic (obj01)?
-	bne.w	Tails_ResetOnFloor_Part2	; if not, branch to the Tails version of this code
+	_cmpi.b	#ObjID_Tails,id(a0)	; is this object ID Tails (obj02)?
+	beq.w	Tails_ResetOnFloor_Part2	; if yes, branch to the Tails version of this code
 
-	btst	#status.player.rolling,status(a0)
-	beq.s	Sonic_ResetOnFloor_Part3
-	bclr	#status.player.rolling,status(a0)
-	move.b	#$13,y_radius(a0) ; this increases Sonic's collision height to standing
+	move.b	y_radius(a0),d0
+	move.b	#19,y_radius(a0)
 	move.b	#9,x_radius(a0)
+	btst	#2,status(a0)
+	beq.s	Sonic_ResetOnFloor_Part3
+	bclr	#2,status(a0)
 	move.b	#AniIDSonAni_Walk,anim(a0)	; use running/walking/standing animation
-	subq.w	#5,y_pos(a0)	; move Sonic up 5 pixels so the increased height doesn't push him into the ground
+	subi.b	#19,d0
+	ext.w	d0
+	add.w	d0,y_pos(a0)
 ; loc_1B0DA:
 Sonic_ResetOnFloor_Part3:
 	bclr	#status.player.in_air,status(a0)
 	bclr	#status.player.pushing,status(a0)
 	bclr	#status.player.rolljumping,status(a0)
-	move.b	#0,(Sonic_doublejump).w
+	move.b	#0,double_jump_flag(a0)
 	move.b	#0,jumping(a0)
 	move.w	#0,(Chain_Bonus_counter).w
 	move.b	#0,flip_angle(a0)
@@ -38141,11 +38166,15 @@ Obj01_Respawning:
 
 ; loc_1B350:
 Sonic_Animate:
+	cmpi.b	#2,(Player1_character_id).w	;knuckles?
+	bne.s	.notknux
+	jmp	Knuckles_Animate
+.notknux:
 	lea	(SonicAniData).l,a1
 	tst.b	(Super_Sonic_flag).w
-	beq.s	+
+	beq.s	.notsuper
 	lea	(SuperSonicAniData).l,a1
-+
+.notsuper:
 	moveq	#0,d0
 	move.b	anim(a0),d0
 	cmp.b	prev_anim(a0),d0	; has animation changed?
@@ -38172,7 +38201,7 @@ SAnim_Do2:
 	moveq	#0,d1
 	move.b	anim_frame(a0),d1	; load current frame number
 	move.b	1(a1,d1.w),d0		; read sprite number from script
-	cmpi.b	#$F0,d0
+	cmpi.b	#$FC,d0
 	bhs.s	SAnim_End_FF		; if animation is complete, branch
 ; loc_1B3BA:
 SAnim_Next:
@@ -38245,6 +38274,7 @@ SAnim_WalkRun:
 +
 	tst.b	(Super_Sonic_flag).w
 	bne.s	SAnim_Super
++
 	lea	(SonAni_Run).l,a1	; use running animation
 	cmpi.w	#$600,d2		; is Sonic at running speed?
 	bhs.s	+			; use running animation
@@ -38463,6 +38493,10 @@ SonAni_Swim_ptr:		offsetTableEntry.w SonAni_Swim		; 41 ; $29	;Swim
 SonAni_SwimUp_ptr:		offsetTableEntry.w SonAni_SwimUp	; 42 ; $2A	;SwimUp
 SonAni_SwimCarry_ptr:		offsetTableEntry.w SonAni_SwimCarry	; 43 ; $2B	;SwimCarry
 SonAni_SwimTired_ptr:		offsetTableEntry.w SonAni_SwimTired	; 44 ; $2C	;SwimTired
+				offsetTableEntry.w SonAni_Blank		; 28 ; $2D	;jnux
+				offsetTableEntry.w SonAni_Blank		; 28 ; $2E	;knux
+				offsetTableEntry.w SonAni_Blank		; 28 ; $2F	;knux
+				offsetTableEntry.w SonAni_Blank		; 28 ; $30	;knux
 
 SonAni_Walk:	dc.b $FF, $F,$10,$11,$12,$13,$14, $D, $E,$FF
 	rev02even
@@ -38614,6 +38648,10 @@ SuperSonicAniData: offsetTable
 	offsetTableEntry.w SonAni_SwimUp	; 42 ; $2A
 	offsetTableEntry.w SonAni_SwimCarry	; 43 ; $2B
 	offsetTableEntry.w SonAni_SwimTired	; 44 ; $2C
+	offsetTableEntry.w SonAni_Blank		; 45 ; $2D	;jnux
+	offsetTableEntry.w SonAni_Blank		; 46 ; $2E	;knux
+	offsetTableEntry.w SonAni_Blank		; 47 ; $2F	;knux
+	offsetTableEntry.w SonAni_Blank		; 48 ; $30	;knux
 
 SupSonAni_Walk:		dc.b $FF,$77,$78,$79,$7A,$7B,$7C,$75,$76,$FF
 	rev02even
@@ -38646,7 +38684,13 @@ LoadSonicDynPLC_Part2:
 	cmp.b	(Sonic_LastLoadedDPLC).w,d0
 	beq.s	return_1B89A
 	move.b	d0,(Sonic_LastLoadedDPLC).w
+	cmpi.b	#2,(Player1_character_id).w	;is knuckles?
+	beq.s	.knux
 	lea	(MapRUnc_Sonic).l,a2
+	bra.s	.dplcchosen
+.knux
+	lea	(MapRUnc_Knuckles).l,a2
+.dplcchosen:
 	add.w	d0,d0
 	adda.w	(a2,d0.w),a2
 	move.w	(a2)+,d5
@@ -38663,7 +38707,13 @@ SPLC_ReadEntry:
 	addi.w	#$10,d3
 	andi.w	#$FFF,d1
 	lsl.l	#5,d1
+	cmpi.b	#2,(Player1_character_id).w	;knuckles?
+	beq.s	.knux				;if yes, knuckles
 	addi.l	#ArtUnc_Sonic,d1
+	bra.s	.loadart
+.knux:
+	addi.l	#ArtUnc_Knuckles,d1
+.loadart:
 	move.w	d4,d2
 	add.w	d3,d4
 	add.w	d3,d4
@@ -38723,6 +38773,7 @@ Obj02_Init:
 	move.w	#$80,(Tails_deceleration).w	; set Tails' deceleration
 	cmpi.w	#2,(Player_mode).w
 	bne.s	Obj02_Init_2Pmode
+	move.b	#1,(Player1_character_id).w		;0 for sonic, 1 for tails, 2 for knuckles
 	tst.b	(Last_star_pole_hit).w
 	bne.s	Obj02_Init_Continued
 	; only happens when not starting at a checkpoint:
@@ -39432,7 +39483,7 @@ Tails_OutWaterSkipSpeed:
 ; ---------------------------------------------------------------------------
 ; loc_1C00A:
 Obj02_MdNormal:
-		move.b	#0,(Tails_doublejump).w
+		move.b	#0,double_jump_flag(a0)
 		move.b	#0,(Tails_carrying_Sonic).w	;stop thinking tails is carrying sonic
 
 	bsr.w	Tails_CheckSpindash
@@ -39451,7 +39502,7 @@ Obj02_MdNormal:
 ; Called if Tails is airborne, but not in a ball (thus, probably not jumping)
 ; loc_1C032: Obj02_MdJump
 Obj02_MdAir:
-        tst.b   (Tails_doublejump).w                  
+        tst.b   double_jump_flag(a0)                  
         bne.s   .flying
 	move.b	#0,(Tails_carrying_Sonic).w	;dont hold sonic
 
@@ -40274,7 +40325,7 @@ Tails_Jump:
 	add.w	d0,y_vel(a0)	; make Tails jump (in Y)
 	bset	#status.player.in_air,status(a0)
 	bclr	#status.player.pushing,status(a0)
-	move.b	#0,(Tails_doublejump).w		;tails doublejump
+	move.b	#0,double_jump_flag(a0)		;tails doublejump
 	addq.l	#4,sp
 	move.b	#1,jumping(a0)
 	clr.b	stick_to_convex(a0)
@@ -40888,7 +40939,7 @@ Tails_ResetOnFloor_Part3:
 	bclr	#status.player.pushing,status(a0)
 	bclr	#status.player.rolljumping,status(a0)
 	move.b	#0,jumping(a0)
-        move.b  #0, (Tails_doublejump).w              ; clear jump flag
+        move.b  #0, double_jump_flag(a0)              ; clear jump flag
 	move.b	#$F0,(Tails_flight_timer)     ;would be 4 seconds, only run decrement every 2nd frame to get 8
     if fixBugs
 	; Without this check, AI Tails will ruin the player's
@@ -41150,7 +41201,7 @@ TAnim_Do2:
 	moveq	#0,d1
 	move.b	anim_frame(a0),d1	; load current frame number
 	move.b	1(a1,d1.w),d0		; read sprite number from script
-	cmpi.b	#$F0,d0
+	cmpi.b	#$FC,d0
 	bhs.s	TAnim_End_FF		; if animation is complete, branch
 ; loc_1CE22:
 TAnim_Next:
@@ -41419,6 +41470,10 @@ TailsAni_Swim_ptr:	offsetTableEntry.w TailsAni_Swim	; 41 ; $29	;added
 TailsAni_SwimUp_ptr:	offsetTableEntry.w TailsAni_SwimUp	; 42 ; $2A	;added
 TailsAni_SwimCarry_ptr:	offsetTableEntry.w TailsAni_SwimCarry	; 43 ; $2B	;added
 TailsAni_SwimTired_ptr:	offsetTableEntry.w TailsAni_SwimTired	; 44 ; $2C	;added
+			offsetTableEntry.w TailsAni_Blank	; 28 ; $2D	;knux gliding anims
+			offsetTableEntry.w TailsAni_Blank	; 28 ; $2E	;knux
+			offsetTableEntry.w TailsAni_Blank	; 28 ; $2F	;knux
+			offsetTableEntry.w TailsAni_Blank	; 28 ; $30	;knux gliding anims
 
 
 TailsAni_Walk:	dc.b $FF,$10,$11,$12,$13,$14,$15, $E, $F,$FF
@@ -43973,6 +44028,19 @@ loc_1ECFE:
 	move.b	d2,d3
 +
 	rts
+
+	; KiS2 (Knuckles): New collision code
+CheckFloorDist_WithRadius:
+	move.b	x_radius(a0),d0
+	ext.w	d0
+	add.w	d0,d2
+	lea	(Primary_Angle).w,a4
+	move.w	#16,a3
+	move.w	#0,d6
+	bsr.w	FindFloor
+	move.b	#0,d2
+	bra.s	loc_1ECFE
+; End of function CheckFloorDist_WithRadius
 ; ===========================================================================
 
 	; Unused collision checking subroutine
@@ -44009,6 +44077,7 @@ ChkFloorEdge_Part2:
 	move.b	y_radius(a0),d0
 	ext.w	d0
 	add.w	d0,d2
+ChkFloorEdge_Part3:
 	move.l	#Primary_Collision,(Collision_addr).w
 	cmpi.b	#$C,top_solid_bit(a0)
 	beq.s	+
@@ -44194,6 +44263,21 @@ CheckRightWallDist_Part2:
 	bra.w	loc_1ECFE
 ; End of function CheckRightWallDist
 
+	; KiS2 (Knuckles): New collision code.
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+
+; loc_319208:
+CheckRightWallDist_WithRadius:
+	move.b	x_radius(a0),d0
+	ext.w	d0
+	add.w	d0,d3
+	lea	(Primary_Angle).w,a4
+	move.w	#16,a3
+	move.w	#0,d6
+	bsr.w	FindWall
+	move.b	#$C0,d2
+	bra.w	loc_1ECFE
+; End of function CheckRightWallDist_WithRadius
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 ; loc_1EF00: ObjCheckLeftWallDist:
@@ -44286,6 +44370,22 @@ CheckCeilingDist_Part2:
 	bra.w	loc_1ECFE
 ; End of function CheckCeilingDist
 
+	; KiS2 (Knuckles): New collision code.
+; =============== S U B	R O U T	I N E =======================================
+
+; sub_3192E6:
+CheckCeilingDist_WithRadius:
+	move.b	x_radius(a0),d0
+	ext.w	d0
+	sub.w	d0,d2
+	eori.w	#$F,d2
+	lea	(Primary_Angle).w,a4
+	move.w	#-16,a3
+	move.w	#$800,d6
+	bsr.w	FindFloor
+	move.b	#$80,d2
+	bra.w	loc_1ECFE
+; End of function CheckCeilingDist_WithRadius
 ; ---------------------------------------------------------------------------
 ; Stores a distance to the nearest wall above the object into d1
 ; ---------------------------------------------------------------------------
@@ -44386,6 +44486,22 @@ CheckLeftWallDist_Part2:
 	bra.w	loc_1ECFE
 ; End of function CheckLeftWallDist
 
+	; KiS2 (Knuckles): New collision code.
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+
+; loc_3193D2:
+CheckLeftWallDist_WithRadius:
+	move.b	x_radius(a0),d0
+	ext.w	d0
+	sub.w	d0,d3
+	eori.w	#$F,d3
+	lea	(Primary_Angle).w,a4
+	move.w	#-16,a3
+	move.w	#$400,d6
+	bsr.w	FindWall
+	move.b	#$40,d2
+	bra.w	loc_1ECFE
+; End of function CheckLeftWallDist_WithRadius
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 ; loc_1F086: ObjCheckRightWallDist:
@@ -85158,7 +85274,7 @@ Touch_Enemy:
 		;s3 final tails code
 		cmpi.b	#ObjID_Tails,id(a0)			; Is player Tails?
 		bne.w	Touch_ChkHurt				; If not, branch
-		tst.b	(Tails_doublejump).w			; Is Tails flying ("gravity-affected")?
+		tst.b	double_jump_flag(a0)			; Is Tails flying ("gravity-affected")?
 		beq.w	Touch_ChkHurt				; If not, branch
 		btst	#status.player.underwater,status(a0)		; Is Tails underwater?
 		bne.w	Touch_ChkHurt				; If not, branch
@@ -88478,7 +88594,7 @@ Debug_SpawnObject:
 ; loc_41C56:
 Debug_ExitDebugMode:
 	btst	#button_B,(Ctrl_1_Press).w
-	beq.s	return_41CB6
+	beq.w	return_41CB6
 	; Exit debug mode
 	moveq	#0,d0
 	move.w	d0,(Debug_placement_mode).w
@@ -88486,7 +88602,7 @@ Debug_ExitDebugMode:
 	;moved around checks
 ; loc_41C82:
 .notTwoPlayerMode:
-	bsr.s	Debug_ResetPlayerStats
+	bsr.w	Debug_ResetPlayerStats
 	move.b	#$13,y_radius(a1)
 	move.b	#9,x_radius(a1)
 	move.w	(Camera_Min_Y_pos_Debug_Copy).w,(Camera_Min_Y_pos).w
@@ -88499,12 +88615,21 @@ Debug_ExitDebugMode:
 	bset	#status.player.in_air,(MainCharacter+status).w
 	rts
 .charcheckdebug:
-		cmpi.w	#2,(Player_mode).w	; is the multiple character flag set to 2 (Tails)?
+		cmpi.b	#1,(Player1_character_id).w	; is the multiple character flag set to 2 (Tails)?
 		beq.s	.tailsmap		; if yes, load Tails' mappings
+		cmpi.b	#2,(Player1_character_id).w	;knuckles?
+		beq.s	.knuxmap				;if yes, knuckles
 						;otherwise it load sonic
 
 	.sonicssmap:
 		move.l	#MapUnc_Sonic,(MainCharacter+mappings).w
+		move.w	#make_art_tile(ArtTile_ArtUnc_Sonic,0,0),(MainCharacter+art_tile).w
+		tst.w	(Two_player_mode).w
+		beq.s	.backtonormalcontinued
+		move.w	#make_art_tile_2p(ArtTile_ArtUnc_Sonic,0,0),(MainCharacter+art_tile).w
+		bra.s	.backtonormalcontinued		; branch to rest of code
+	.knuxmap:
+		move.l	#MapUnc_Knuckles,(MainCharacter+mappings).w
 		move.w	#make_art_tile(ArtTile_ArtUnc_Sonic,0,0),(MainCharacter+art_tile).w
 		tst.w	(Two_player_mode).w
 		beq.s	.backtonormalcontinued
@@ -91812,10 +91937,10 @@ Tails_Flight:
 		;move.b	#id_Walk,anim(a0)
 
 Offset_0x00E382:
-		move.b	#1,(Tails_doublejump).w
+		move.b	#1,double_jump_flag(a0)
 		andi.b	#button_B_mask|button_C_mask,d0
 		beq.s	.20anim
-		move.b	#2,(Tails_doublejump).w
+		move.b	#2,double_jump_flag(a0)
 
 ;Offset_0x00E394:
 .20anim:
@@ -91852,12 +91977,12 @@ Tails_StartFlying:
 		cmpi.b	#AniIDTailsAni_SwimTired,anim(a0)	;is tails in flying animation?
 		beq.s	.flying		;if yes, fly		;otherwise don't fly
 	.noflying:
-		move.b	#0,(Tails_doublejump).w
+		move.b	#0,double_jump_flag(a0)
 		move.b	#0,(Tails_carrying_Sonic).w
 		rts
 	.flying:
 		bsr.w	Tails_SetFlyingAnimation
-		cmpi.b	#1,(Tails_doublejump).w
+		cmpi.b	#1,double_jump_flag(a0)
 		bne.s	FlyP1
 		cmpi.b	#0,(Tails_flight_timer).w		;out of time?
 		beq.s	Tails_Speed2			;if yes, no flying
@@ -92020,9 +92145,14 @@ Tails_FlyAnimNoTimer:
 Sonic_InstaShield:
 	tst.w	(Demo_mode_flag).w	; is demo mode on?
 	bne.w	rts_SonicInstaShield	; if yes, no move
+	tst.w	(Two_player_mode).w	;2 player mode?
+	bne.s	.skiptimercheck		;if yes, don't use the timer to stop use of ability
+	tst.b	(Update_HUD_timer).w	; has Sonic reached the end of the act?
+	beq.w	rts_SonicInstaShield		; if yes, don't use move
+.skiptimercheck:
 		cmpi.b	#1,(Tails_carrying_Sonic).w		;carrying sonic?
 		beq.s	rts_SonicInstaShield				;if yes, don't perform instashield/super
-		cmpi.b	#1,(Sonic_doublejump).w	;already did it?
+		cmpi.b	#1,double_jump_flag(a0)	;already did it?
 		beq.w	rts_SonicInstaShield	;if yes, don't
 		btst	#2,status(a0)		; sonic is rolling?
 		beq.w	rts_SonicInstaShield		;if not, don't do move
@@ -92041,7 +92171,11 @@ Sonic_InstaShield:
 	beq.s	.skipsuper		; if yes, don't go super
 		jmp	Sonic_CheckGoSuper	;otherwise, turning into Super Sonic
 	.skipsuper:
-		move.b	#1,(Sonic_doublejump).w
+		cmpi.b	#2,(Player1_character_id).w
+		bne.w	.doinstashield
+		jmp	Knuckles_BeginGlide
+.doinstashield:
+		move.b	#1,double_jump_flag(a0)
 		move.b	#AniIDSonAni_InstaShield,anim(a0)
 	move.b	#SndID_SpikeSwitch,d0 ; play the spike switch sound
 	jsr	PlaySound
@@ -92052,7 +92186,7 @@ Tails_CarrySonic:	;code copied from obj7F, one of vines in mystic cave zone
 	tst.b	spindash_flag(a1)	;already started peelout?
 	bne.w	.stopcarryingsonic	;if yes, don't carry sonic
 
-	;tst.b	(Sonic_doublejump).w	;already started mid air ability?
+	;tst.b	double_jump_flag(a0)	;already started mid air ability?
 	;bne.w	.stopcarryingsonic	;if yes, don't carry sonic
 
 	tst.b	(WindTunnel_flag).w	;wind tunnel active?
@@ -92141,6 +92275,1464 @@ Tails_CarrySonic:	;code copied from obj7F, one of vines in mystic cave zone
 		rts
 .end:
 		rts
+
+KnucklesAniData:		offsetTable
+				offsetTableEntry.w KnucklesAni_Walk		;  0 ;   0
+				offsetTableEntry.w KnucklesAni_Run		;  1 ;   1
+				offsetTableEntry.w KnucklesAni_Roll		;  2 ;   2
+				offsetTableEntry.w KnucklesAni_Roll2		;  3 ;   3
+				offsetTableEntry.w KnucklesAni_Push		;  4 ;   4
+				offsetTableEntry.w KnucklesAni_Wait		;  5 ;   5
+				offsetTableEntry.w KnucklesAni_Balance		;  6 ;   6
+				offsetTableEntry.w KnucklesAni_LookUp		;  7 ;   7
+				offsetTableEntry.w KnucklesAni_Duck		;  8 ;   8
+				offsetTableEntry.w KnucklesAni_Spindash		;  9 ;   9
+				offsetTableEntry.w KnucklesAni_Unused		; 10 ;  $A
+				offsetTableEntry.w KnucklesAni_Pull		; 11 ;  $B
+				offsetTableEntry.w KnucklesAni_Balance2		; 12 ;  $C
+				offsetTableEntry.w KnucklesAni_Stop		; 13 ;  $D
+				offsetTableEntry.w KnucklesAni_Float		; 14 ;  $E
+				offsetTableEntry.w KnucklesAni_Float2		; 15 ;  $F
+				offsetTableEntry.w KnucklesAni_Spring		; 16 ; $10
+				offsetTableEntry.w KnucklesAni_Hang		; 17 ; $11
+				offsetTableEntry.w KnucklesAni_Unused_0		; 18 ; $12
+				offsetTableEntry.w KnucklesAni_S3EndingPose	; 19 ; $13
+				offsetTableEntry.w KnucklesAni_WFZHang		; 20 ; $14
+				offsetTableEntry.w KnucklesAni_Bubble		; 21 ; $15
+				offsetTableEntry.w KnucklesAni_DeathBW		; 22 ; $16
+				offsetTableEntry.w KnucklesAni_Drown		; 23 ; $17
+				offsetTableEntry.w KnucklesAni_Death		; 24 ; $18
+				offsetTableEntry.w KnucklesAni_OilSlide		; 25 ; $19
+				offsetTableEntry.w KnucklesAni_Hurt		; 26 ; $1A
+				offsetTableEntry.w KnucklesAni_OilSlide_0	; 27 ; $1B
+				offsetTableEntry.w KnucklesAni_Blank		; 28 ; $1C
+				offsetTableEntry.w KnucklesAni_Unused_1		; 29 ; $1D
+				offsetTableEntry.w KnucklesAni_Unused_2		; 30 ; $1E
+				offsetTableEntry.w KnucklesAni_Transform	; 31 ; $1F
+				offsetTableEntry.w KnucklesAni_Blank		; 29 ; $20
+				offsetTableEntry.w KnucklesAni_Blank		; 30 ; $21
+				offsetTableEntry.w KnucklesAni_Spindash		; 29 ; $22	;sonic and tails anims
+				offsetTableEntry.w KnucklesAni_Blank		; 30 ; $23
+				offsetTableEntry.w KnucklesAni_Blank		; 32 ; $24	unused++
+				offsetTableEntry.w KnucklesAni_Blank		; 35 ; $25
+				offsetTableEntry.w KnucklesAni_Blank		; 36 ; $26
+				offsetTableEntry.w KnucklesAni_Blank		; 37 ; $27	;added
+				offsetTableEntry.w KnucklesAni_Blank		; 38 ; $28	;added
+				offsetTableEntry.w KnucklesAni_Blank		; 39 ; $29	;added
+				offsetTableEntry.w KnucklesAni_Blank		; 40 ; $2A	;added
+				offsetTableEntry.w KnucklesAni_Blank		; 41 ; $2B	;added
+KnuxAni_Glide_ptr:		offsetTableEntry.w KnucklesAni_Gliding		; 32 ; $2C
+KnuxAni_FallAfterGlide_ptr:	offsetTableEntry.w KnucklesAni_FallFromGlide	; 33 ; $2D
+KnuxAni_ClimbLedge_ptr:		offsetTableEntry.w KnucklesAni_GetUp		; 34 ; $2E
+KnuxAni_LandAfterGlide_ptr:	offsetTableEntry.w KnucklesAni_HardFall		; 35 ; $2F
+KnuxAni_ShadowBox_ptr:		offsetTableEntry.w KnucklesAni_Badass		; 36 ; $30
+
+KnucklesAni_Walk:	dc.b $FF,  7,  8,  1,  2,  3,  4,  5,  6,$FF
+	rev02even
+
+KnucklesAni_Run:	dc.b $FF,$21,$22,$23,$24,$FF,$FF,$FF,$FF,$FF
+	rev02even
+
+KnucklesAni_Roll:	dc.b $FE,$9A,$96,$9A,$97,$9A,$98,$9A,$99,$FF
+	rev02even
+
+KnucklesAni_Roll2:	dc.b $FE,$9A,$96,$9A,$97,$9A,$98,$9A,$99,$FF
+	rev02even
+
+KnucklesAni_Push:	dc.b $FD,$CE,$CF,$D0,$D1,$FF,$FF,$FF,$FF,$FF
+	rev02even
+KnucklesAni_Wait:
+	dc.b   5,$56,$56,$56,$56,$56,$56,$56,$56,$56,$56,$56,$56
+	dc.b $56,$56,$56,$56,$56,$56,$56,$56,$56,$56,$56,$56,$56
+	dc.b $56,$56,$56,$56,$56,$56,$56,$56,$56,$56,$56,$56,$56
+	dc.b $56,$56,$56,$56,$56,$56,$56,$56,$56,$56,$56,$56,$D2
+	dc.b $D2,$D2,$D3,$D3,$D3,$D2,$D2,$D2,$D3,$D3,$D3,$D2,$D2
+	dc.b $D2,$D3,$D3,$D3,$D2,$D2,$D2,$D3,$D3,$D3,$D2,$D2,$D2
+	dc.b $D3,$D3,$D3,$D2,$D2,$D2,$D3,$D3,$D3,$D2,$D2,$D2,$D3
+	dc.b $D3,$D3,$D2,$D2,$D2,$D3,$D3,$D3,$D2,$D2,$D2,$D3,$D3
+	dc.b $D3,$D4,$D4,$D4,$D4,$D4,$D7,$D8,$D9,$DA,$DB,$D8,$D9
+	dc.b $DA,$DB,$D8,$D9,$DA,$DB,$D8,$D9,$DA,$DB,$D8,$D9,$DA
+	dc.b $DB,$D8,$D9,$DA,$DB,$D8,$D9,$DA,$DB,$D8,$D9,$DA,$DB
+	dc.b $DC,$DD,$DC,$DD,$DE,$DE,$D8,$D7,$FF
+	rev02even
+KnucklesAni_Balance:
+	dc.b   3,$9F,$9F,$A0,$A0,$A1,$A1,$A2,$A2,$A3,$A3,$A4,$A4
+	dc.b $A5,$A5,$A5,$A5,$A5,$A5,$A5,$A5,$A5,$A5,$A5,$A5,$A5
+	dc.b $A5,$A5,$A6,$A6,$A6,$A7,$A7,$A7,$A8,$A8,$A9,$A9,$AA
+	dc.b $AA,$FE,  6
+	rev02even
+KnucklesAni_LookUp:	dc.b   5,$D5,$D6,$FE,  1
+	rev02even
+KnucklesAni_Duck:	dc.b   5,$9B,$9C,$FE,  1
+	rev02even
+KnucklesAni_Spindash:	dc.b   0,$86,$87,$86,$88,$86,$89,$86,$8A,$86,$8B,$FF
+	rev02even
+KnucklesAni_Unused:
+	dc.b   9,$BA,$C5,$C6,$C6,$C6,$C6,$C6,$C6,$C7,$C7,$C7,$C7
+	dc.b $C7,$C7,$C7,$C7,$C7,$C7,$C7,$C7,$FD,  0
+	rev02even
+KnucklesAni_Pull:	dc.b  $F,$8F,$FF
+	rev02even
+KnucklesAni_Balance2:
+	dc.b   3,$A1,$A1,$A2,$A2,$A3,$A3,$A4,$A4,$A5,$A5,$A5,$A5
+	dc.b $A5,$A5,$A5,$A5,$A5,$A5,$A5,$A5,$A5,$A5,$A5,$A6,$A6
+	dc.b $A6,$A7,$A7,$A7,$A8,$A8,$A9,$A9,$AA,$AA,$FE
+	dc.b   6
+	rev02even
+KnucklesAni_Stop:	dc.b   3,$9D,$9E,$9F,$A0,$FD,	0
+	rev02even
+KnucklesAni_Float:	dc.b   7,$C0,$FF
+	rev02even
+KnucklesAni_Float2:	dc.b   5,$C0,$C1,$C2,$C3,$C4,$C5,$C6,$C7,$C8,$C9,$FF
+	rev02even
+KnucklesAni_Spring:	dc.b $2F,$8E,$FD,  0
+	rev02even
+KnucklesAni_Hang:	dc.b   1,$AE,$AF,$FF
+	rev02even
+KnucklesAni_Unused_0:	dc.b  $F,$43,$43,$43,$FE,  1
+	rev02even
+KnucklesAni_S3EndingPose:
+	dc.b   5,$B1,$B2,$B2,$B2,$B3,$B4,$FE,  1,  7,$B1,$B3,$B3
+	dc.b $B3,$B3,$B3,$B3,$B2,$B3,$B4,$B3,$FE,  4
+	rev02even
+KnucklesAni_WFZHang:	dc.b $13,$91,$FF
+	rev02even
+KnucklesAni_Bubble:	dc.b  $B,$B0,$B0,  3,  4,$FD,  0
+	rev02even
+KnucklesAni_DeathBW:	dc.b $20,$AC,$FF
+	rev02even
+KnucklesAni_Drown:	dc.b $20,$AD,$FF
+	rev02even
+KnucklesAni_Death:	dc.b $20,$AB,$FF
+	rev02even
+KnucklesAni_OilSlide:	dc.b   9,$8C,$FF
+	rev02even
+KnucklesAni_Hurt:	dc.b $40,$8D,$FF
+	rev02even
+KnucklesAni_OilSlide_0:	dc.b   9,$8C,$FF
+	rev02even
+KnucklesAni_Blank:	dc.b $77,  0,$FF
+	rev02even
+KnucklesAni_Unused_1:	dc.b $13,$D0,$D1,$FF
+	rev02even
+KnucklesAni_Unused_2:	dc.b   3,$CF,$C8,$C9,$CA,$CB,$FE,  4
+	rev02even
+KnucklesAni_Unused_3:	dc.b $13,$D0,$D1,$FF
+	rev02even
+KnucklesAni_Unused_4:	dc.b   3,$CF,$C8,$C9,$CA,$CB,$FE,  4
+	rev02even
+KnucklesAni_Gliding:	dc.b $1F,$C0,$FF
+	rev02even
+KnucklesAni_FallFromGlide:	dc.b   7,$CA,$CB,$FE,	 1
+	rev02even
+KnucklesAni_GetUp:	dc.b  $F,$CD,$FD,  0
+	rev02even
+KnucklesAni_HardFall:	dc.b  $F,$9C,$FD,  0
+	rev02even
+KnucklesAni_Badass:
+	dc.b   5,$D8,$D9,$DA,$DB,$D8,$D9,$DA,$DB,$D8,$D9,$DA,$DB
+	dc.b $D8,$D9,$DA,$DB,$D8,$D9,$DA,$DB,$D8,$D9,$DA,$DB,$D8
+	dc.b $D9,$DA,$DB,$D8,$D9,$DA,$DB,$DC,$DD,$DC,$DD,$DE,$DE
+	dc.b $FF
+	rev02even
+KnucklesAni_Transform:
+	dc.b   2,$EB,$EB,$EC,$ED,$EC,$ED,$EC,$ED,$EC,$ED,$EC,$ED
+	dc.b $FD,  0
+	even
+
+MapUnc_Knuckles:		include		"mappings/sprite/Knuckles.asm"
+				even
+MapRUnc_Knuckles:		include		"mappings/spriteDPLC/Knuckles.asm"
+				even
+ArtUnc_Knuckles:		BINCLUDE	"art/uncompressed/Knuckles' art.bin"
+    				even
+
+; ---------------------------------------------------------------------------
+; Subroutine to animate Sonic's sprites
+; See also: AnimateSprite
+; ---------------------------------------------------------------------------
+
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+
+; loc_1B350:
+Knuckles_Animate:
+	lea	(KnucklesAniData).l,a1
+.notsuper:
+	moveq	#0,d0
+	move.b	anim(a0),d0
+	cmp.b	prev_anim(a0),d0	; has animation changed?
+	beq.s	KAnim_Do		; if not, branch
+	move.b	d0,prev_anim(a0)	; set previous animation
+	move.b	#0,anim_frame(a0)	; reset animation frame
+	move.b	#0,anim_frame_duration(a0)	; reset frame duration
+	bclr	#status.player.pushing,status(a0)
+; loc_1B384:
+KAnim_Do:
+	add.w	d0,d0
+	adda.w	(a1,d0.w),a1	; calculate address of appropriate animation script
+	move.b	(a1),d0
+	bmi.s	KAnim_WalkRun	; if animation is walk/run/roll/jump, branch
+	move.b	status(a0),d1
+	andi.b	#1<<status.player.x_flip,d1
+	andi.b	#~(1<<render_flags.x_flip|1<<render_flags.y_flip),render_flags(a0)
+	or.b	d1,render_flags(a0)
+	subq.b	#1,anim_frame_duration(a0)	; subtract 1 from frame duration
+	bpl.s	KAnim_Delay			; if time remains, branch
+	move.b	d0,anim_frame_duration(a0)	; load frame duration
+; loc_1B3AA:
+KAnim_Do2:
+	moveq	#0,d1
+	move.b	anim_frame(a0),d1	; load current frame number
+	move.b	1(a1,d1.w),d0		; read sprite number from script
+	cmpi.b	#$FC,d0
+	bhs.s	KAnim_End_FF		; if animation is complete, branch
+; loc_1B3BA:
+KAnim_Next:
+	move.b	d0,mapping_frame(a0)	; load sprite number
+	addq.b	#1,anim_frame(a0)	; go to next frame
+; return_1B3C2:
+KAnim_Delay:
+	rts
+; ===========================================================================
+; loc_1B3C4:
+KAnim_End_FF:
+	addq.b	#1,d0		; is the end flag = $FF?
+	bne.s	KAnim_End_FE	; if not, branch
+	move.b	#0,anim_frame(a0)	; restart the animation
+	move.b	1(a1),d0	; read sprite number
+	bra.s	KAnim_Next
+; ===========================================================================
+; loc_1B3D4:
+KAnim_End_FE:
+	addq.b	#1,d0		; is the end flag = $FE?
+	bne.s	KAnim_End_FD	; if not, branch
+	move.b	2(a1,d1.w),d0	; read the next byte in the script
+	sub.b	d0,anim_frame(a0)	; jump back d0 bytes in the script
+	sub.b	d0,d1
+	move.b	1(a1,d1.w),d0	; read sprite number
+	bra.s	KAnim_Next
+; ===========================================================================
+; loc_1B3E8:
+KAnim_End_FD:
+	addq.b	#1,d0			; is the end flag = $FD?
+	bne.s	KAnim_End		; if not, branch
+	move.b	2(a1,d1.w),anim(a0)	; read next byte, run that animation
+; return_1B3F2:
+KAnim_End:
+	rts
+; ===========================================================================
+; loc_1B3F4:
+KAnim_WalkRun:
+	addq.b	#1,d0		; is the start flag = $FF?
+	bne.w	KAnim_Roll	; if not, branch
+	moveq	#0,d0		; is animation walking/running?
+	move.b	flip_angle(a0),d0	; if not, branch
+	bne.w	KAnim_Tumble
+	moveq	#0,d1
+	move.b	angle(a0),d0	; get Sonic's angle
+	bmi.s	+
+	beq.s	+
+	subq.b	#1,d0
++
+	move.b	status(a0),d2
+	andi.b	#1<<status.player.x_flip,d2	; is Sonic mirrored horizontally?
+	bne.s	+				; if yes, branch
+	not.b	d0				; reverse angle
++
+	addi.b	#$10,d0		; add $10 to angle
+	bpl.s	+		; if angle is $0-$7F, branch
+	moveq	#1<<render_flags.x_flip|1<<render_flags.y_flip,d1
++
+	andi.b	#~(1<<render_flags.x_flip|1<<render_flags.y_flip),render_flags(a0)
+	eor.b	d1,d2
+	or.b	d2,render_flags(a0)
+	btst	#status.player.pushing,status(a0)
+	bne.w	KAnim_Push
+	lsr.b	#4,d0		; divide angle by 16
+	andi.b	#6,d0		; angle must be 0, 2, 4 or 6
+	mvabs.w	inertia(a0),d2	; get Sonic's "speed" for animation purposes
+	_btst	#status_secondary.sliding,status_secondary(a0)
+	_beq.w	+
+	add.w	d2,d2
++
+	lea	(KnucklesAni_Run).l,a1	; use running animation
+	cmpi.w	#$600,d2		; is Sonic at running speed?
+	bhs.s	+			; use running animation
+	lea	(KnucklesAni_Walk).l,a1	; if yes, branch
+	add.b	d0,d0
++
+	add.b	d0,d0
+	move.b	d0,d3
+	moveq	#0,d1
+	move.b	anim_frame(a0),d1
+	move.b	1(a1,d1.w),d0
+	cmpi.b	#-1,d0
+	bne.s	+
+	move.b	#0,anim_frame(a0)
+	move.b	1(a1),d0
++
+	move.b	d0,mapping_frame(a0)
+	add.b	d3,mapping_frame(a0)
+	subq.b	#1,anim_frame_duration(a0)
+	bpl.s	return_1B4ACK
+	neg.w	d2
+	addi.w	#$800,d2
+	bpl.s	+
+	moveq	#0,d2
++
+	lsr.w	#8,d2
+	move.b	d2,anim_frame_duration(a0)	; modify frame duration
+	addq.b	#1,anim_frame(a0)		; modify frame number
+
+return_1B4ACK:
+	rts
+; ===========================================================================
+; loc_1B520:
+KAnim_Tumble:
+	move.b	flip_angle(a0),d0
+	moveq	#0,d1
+	move.b	status(a0),d2
+	andi.b	#1<<status.player.x_flip,d2
+	bne.s	KAnim_Tumble_Left
+
+	andi.b	#~(1<<render_flags.x_flip|1<<render_flags.y_flip),render_flags(a0)
+	addi.b	#$B,d0
+	divu.w	#$16,d0
+	addi.b	#$31,d0
+	move.b	d0,mapping_frame(a0)
+	move.b	#0,anim_frame_duration(a0)
+	rts
+; ===========================================================================
+; loc_1B54E:
+KAnim_Tumble_Left:
+	andi.b	#~(1<<render_flags.x_flip|1<<render_flags.y_flip),render_flags(a0)
+	tst.b	flip_turned(a0)
+	beq.s	loc_1B566K
+	ori.b	#1<<render_flags.x_flip,render_flags(a0)
+	addi.b	#$B,d0
+	bra.s	loc_1B572K
+; ===========================================================================
+
+loc_1B566K:
+	ori.b	#1<<render_flags.x_flip|1<<render_flags.y_flip,render_flags(a0)
+	neg.b	d0
+	addi.b	#$8F,d0
+
+loc_1B572K:
+	divu.w	#$16,d0
+	addi.b	#$31,d0
+	move.b	d0,mapping_frame(a0)
+	move.b	#0,anim_frame_duration(a0)
+	rts
+; ===========================================================================
+; loc_1B586:
+KAnim_Roll:
+	subq.b	#1,anim_frame_duration(a0)	; subtract 1 from frame duration
+	bpl.w	KAnim_Delay			; if time remains, branch
+	addq.b	#1,d0		; is the start flag = $FE?
+	bne.s	KAnim_Push	; if not, branch
+	mvabs.w	inertia(a0),d2
+	lea	(KnucklesAni_Roll2).l,a1
+	cmpi.w	#$600,d2
+	bhs.s	+
+	lea	(KnucklesAni_Roll).l,a1
++
+	neg.w	d2
+	addi.w	#$400,d2
+	bpl.s	+
+	moveq	#0,d2
++
+	lsr.w	#8,d2
+	move.b	d2,anim_frame_duration(a0)
+	move.b	status(a0),d1
+	andi.b	#1<<status.player.x_flip,d1
+	andi.b	#~(1<<render_flags.x_flip|1<<render_flags.y_flip),render_flags(a0)
+	or.b	d1,render_flags(a0)
+	bra.w	KAnim_Do2
+; ===========================================================================
+
+KAnim_Push:
+	subq.b	#1,anim_frame_duration(a0)	; subtract 1 from frame duration
+	bpl.w	KAnim_Delay			; if time remains, branch
+	move.w	inertia(a0),d2
+	bmi.s	+
+	neg.w	d2
++
+	addi.w	#$800,d2
+	bpl.s	+
+	moveq	#0,d2
++
+	lsr.w	#6,d2
+	move.b	d2,anim_frame_duration(a0)
+	lea	(KnucklesAni_Push).l,a1
+	move.b	status(a0),d1
+	andi.b	#1<<status.player.x_flip,d1
+	andi.b	#~(1<<render_flags.x_flip|1<<render_flags.y_flip),render_flags(a0)
+	or.b	d1,render_flags(a0)
+	bra.w	KAnim_Do2
+; ===========================================================================
+	even
+
+Knuckles_BeginGlide:
+	bclr	#2,status(a0)
+	move.b	#10,y_radius(a0)
+	move.b	#10,x_radius(a0)
+	bclr	#4,status(a0)
+	move.b	#1,double_jump_flag(a0)
+	addi.w	#$200,y_vel(a0)
+	bpl.s	loc_31659E
+	move.w	#0,y_vel(a0)
+
+loc_31659E:
+	moveq	#0,d1
+	move.w	#$400,d0
+	move.w	d0,inertia(a0)
+	btst	#0,status(a0)
+	beq.s	loc_3165B4
+	neg.w	d0
+	moveq	#-$80,d1
+
+loc_3165B4:
+	move.w	d0,x_vel(a0)
+	move.b	d1,double_jump_property(a0)
+	move.w	#0,angle(a0)
+	move.b	#0,(Gliding_collision_flags).w
+	bset	#status.player.in_air,(Gliding_collision_flags).w
+	bsr.w	Knuckles_DoGlidingAnimation
+
+return_3165D2:
+	rts
+
+Obj01_MdAir_Gliding:
+	bsr.w	Knuckles_GlideSpeedControl
+	jsr	Sonic_LevelBound
+	jsr	(ObjectMove).l
+	bsr.w	Knuckles_GlideControl
+
+return_3156B8:
+	rts
+
+
+; =============== S U B	R O U T	I N E =======================================
+
+
+Knuckles_GlideControl:
+	move.b	double_jump_flag(a0),d0
+	beq.s	return_3156B8
+	cmpi.b	#2,d0
+	beq.w	Knuckles_FallingFromGlide
+	cmpi.b	#3,d0
+	beq.w	Knuckles_Sliding
+	cmpi.b	#4,d0
+	beq.w	Knuckles_Climbing_Wall
+	cmpi.b	#5,d0
+	beq.w	Knuckles_Climbing_Onto_Ledge
+
+;Knuckles_NormalGlide:
+	; These two lines are not here in S3K.
+	move.b	#10,y_radius(a0)
+	move.b	#10,x_radius(a0)
+
+	; This function updates 'Gliding_collision_flags'.
+	bsr.w	Knuckles_DoLevelCollision2
+
+	btst	#status.player.pushing,(Gliding_collision_flags).w
+	bne.w	Knuckles_BeginClimb
+
+	; These two lines are not here in S3K.
+	move.b	#19,y_radius(a0)
+	move.b	#9,x_radius(a0)
+
+	btst	#status.player.in_air,(Gliding_collision_flags).w
+	beq.s	Knuckles_BeginSlide
+
+	move.b	(Ctrl_1_Held_Logical).w,d0
+	andi.b	#button_A_mask|button_B_mask|button_C_mask,d0
+	bne.s	.continueGliding
+
+	; The player has let go of the jump button, so exit the gliding state
+	; and enter the falling state.
+	move.b	#2,double_jump_flag(a0)
+	move.b	#AniIDKnuxAni_FallAfterGlide,anim(a0)
+	bclr	#status.player.x_flip,status(a0)
+	tst.w	x_vel(a0)
+	bpl.s	+
+	bset	#status.player.x_flip,status(a0)
++
+	; Divide Knuckles' X velocity by 4.
+	asr.w	x_vel(a0)
+	asr.w	x_vel(a0)
+
+	move.b	#19,y_radius(a0)
+	move.b	#9,x_radius(a0)
+
+	rts
+; ---------------------------------------------------------------------------
+
+.continueGliding:
+	bra.w	Knuckles_DoGlidingAnimation
+; ---------------------------------------------------------------------------
+
+Knuckles_BeginSlide:
+	bclr	#status.player.x_flip,status(a0)
+	tst.w	x_vel(a0)
+	bpl.s	+
+	bset	#status.player.x_flip,status(a0)
++
+	move.b	angle(a0),d0
+	addi.b	#$20,d0
+	andi.b	#$C0,d0
+	beq.s	loc_315780
+
+	move.w	inertia(a0),x_vel(a0)
+	move.w	#0,y_vel(a0)
+
+	jmp	Sonic_ResetOnFloor_Part2
+; ---------------------------------------------------------------------------
+
+loc_315780:
+	move.b	#3,double_jump_flag(a0)
+	move.b	#$CC,mapping_frame(a0)
+	move.b	#$7F,anim_frame_duration(a0)
+	move.b	#0,anim_frame(a0)
+
+	; The drowning countdown uses the dust clouds' VRAM, so don't create
+	; dust if Knuckles is drowning.
+	cmpi.b	#12,air_left(a0)
+	blo.s	+
+	; Create dust clouds.
+	move.b	#6,(Sonic_Dust+routine).w
+	move.b	#$15,(Sonic_Dust+mapping_frame).w
++
+	rts
+; ---------------------------------------------------------------------------
+
+Knuckles_BeginClimb:
+	tst.b	(Disable_wall_grab).w
+	bmi.w	.fail
+
+	move.b	lrb_solid_bit(a0),d5
+	move.b	double_jump_property(a0),d0
+	addi.b	#$40,d0
+	bpl.s	.right
+
+;.left:
+	bset	#status.player.x_flip,status(a0)
+
+	jsr	CheckLeftCeilingDist
+	or.w	d0,d1
+	bne.s	.checkFloorLeft
+
+	addq.w	#1,x_pos(a0)
+	bra.s	.success
+
+.right:
+	bclr	#status.player.x_flip,status(a0)
+
+	jsr	CheckRightCeilingDist
+	or.w	d0,d1
+	bne.w	.checkFloorRight
+; loc_3157E8:
+.success:
+	; These two lines aren't here in S3K.
+	move.b	#19,y_radius(a0)
+	move.b	#9,x_radius(a0)
+
+	; This sound does not exist in Sonic 2, so the code to play it was
+	; removed.
+	;moveq	#signextendB(sfx_Grab),d0
+
+	; If Hyper Knuckles glides into a wall at a high-enough
+	; speed, then make the screen shake and harm all enemies
+	; on-screen.
+	; This code is leftover and useless in KiS2.
+	tst.b	(Super_Sonic_flag).w
+	beq.s	.noQuake
+
+	cmpi.w	#$480,inertia(a0)
+	blo.s	.noQuake
+
+	nop
+	; This is the code that replaced the above 'nop' in S3K.
+	;move.w	#$14,(Glide_screen_shake).w
+	;bsr.w	HyperAttackTouchResponse
+	;moveq	#signextendB(sfx_Thump),d0
+
+.noQuake:
+	;jsr	(PlaySound).l
+	move.w	#0,inertia(a0)
+	move.w	#0,x_vel(a0)
+	move.w	#0,y_vel(a0)
+	move.b	#4,double_jump_flag(a0)
+	move.b	#$B7,mapping_frame(a0)
+	move.b	#$7F,anim_frame_duration(a0)
+	move.b	#0,anim_frame(a0)
+	move.b	#3,double_jump_property(a0)
+	; 'x_sub' holds the X coordinate that Knuckles was at when he first
+	; latched onto the wall.
+	move.w	x_pos(a0),x_sub(a0)
+	rts
+; ---------------------------------------------------------------------------
+
+.checkFloorLeft:
+	; This adds the Y radius to the X coordinate...
+	; This appears to be a bug, but, luckily, the X and Y radius are both
+	; 10, so this is harmless.
+	move.w	x_pos(a0),d3
+	move.b	y_radius(a0),d0
+	ext.w	d0
+	sub.w	d0,d3
+	subq.w	#1,d3
+; loc_31584A:
+.checkFloorCommon:
+	move.w	y_pos(a0),d2
+	subi.w	#11,d2
+	jsr	ChkFloorEdge_Part3
+
+	tst.w	d1
+	bmi.s	.fail
+	cmpi.w	#12,d1
+	bhs.s	.fail
+	add.w	d1,y_pos(a0)
+	bra.w	.success
+; ---------------------------------------------------------------------------
+; loc_31586A:
+.checkFloorRight:
+	; This adds the Y radius to the X coordinate...
+	; This appears to be a bug, but, luckily, the X and Y radius are both
+	; 10, so this is harmless.
+	move.w	x_pos(a0),d3
+	move.b	y_radius(a0),d0
+	ext.w	d0
+	add.w	d0,d3
+	addq.w	#1,d3
+	bra.s	.checkFloorCommon
+; ---------------------------------------------------------------------------
+; loc_31587A:
+.fail:
+	move.b	#2,double_jump_flag(a0)
+	move.b	#AniIDKnuxAni_FallAfterGlide,anim(a0)
+	move.b	#19,y_radius(a0)
+	move.b	#9,x_radius(a0)
+	bset	#status.player.in_air,(Gliding_collision_flags).w
+	rts
+; ---------------------------------------------------------------------------
+
+Knuckles_FallingFromGlide:
+	jsr	Sonic_ChgJumpDir
+
+	; Apply gravity.
+	addi.w	#$38,y_vel(a0)
+
+	; Fall slower when underwater.
+	btst	#status.player.underwater,status(a0)
+	beq.s	+
+	subi.w	#$28,y_vel(a0)
++
+	; This function updates 'Gliding_collision_flags'.
+	bsr.w	Knuckles_DoLevelCollision2
+
+	btst	#status.player.in_air,(Gliding_collision_flags).w
+	bne.s	.return
+
+	; Knuckles has touched the ground.
+	move.w	#0,inertia(a0)
+	move.w	#0,x_vel(a0)
+	move.w	#0,y_vel(a0)
+
+	move.b	y_radius(a0),d0
+	subi.b	#19,d0
+	ext.w	d0
+	add.w	d0,y_pos(a0)
+
+	; This sound does not exist in Sonic 2, so the code to play it was
+	; removed.
+	;moveq	#signextendB(sfx_GlideLand),d0
+	;jsr	(PlaySound).l
+
+	move.b	angle(a0),d0
+	addi.b	#$20,d0
+	andi.b	#$C0,d0
+	beq.s	+
+	jmp	Sonic_ResetOnFloor_Part2
++
+	jsr	Sonic_ResetOnFloor_Part2
+	move.w	#$F,move_lock(a0)
+	move.b	#AniIDKnuxAni_LandAfterGlide,anim(a0)
+; return_315900:
+.return:
+	rts
+; ---------------------------------------------------------------------------
+
+Knuckles_Sliding:
+	move.b	(Ctrl_1_Held_Logical).w,d0
+	andi.b	#button_A_mask|button_B_mask|button_C_mask,d0
+	beq.s	.getUp
+
+	tst.w	x_vel(a0)
+	bpl.s	.goingRight
+
+;.goingLeft:
+	addi.w	#$20,x_vel(a0)
+	bmi.s	.continueSliding2
+
+	bra.s	.getUp
+; ---------------------------------------------------------------------------
+; loc_31591C:
+.continueSliding2:
+	bra.s	.continueSliding
+; ---------------------------------------------------------------------------
+; loc_31591E:
+.goingRight:
+	subi.w	#$20,x_vel(a0)
+	bpl.s	.continueSliding
+; loc_315926:
+.getUp:
+	move.w	#0,inertia(a0)
+	move.w	#0,x_vel(a0)
+	move.w	#0,y_vel(a0)
+
+	move.b	y_radius(a0),d0
+	subi.b	#19,d0
+	ext.w	d0
+	add.w	d0,y_pos(a0)
+
+	jsr	Sonic_ResetOnFloor_Part2
+
+	move.w	#$F,move_lock(a0)
+	move.b	#AniIDKnuxAni_ClimbLedge,anim(a0)
+
+	rts
+; ---------------------------------------------------------------------------
+; loc_315958:
+.continueSliding:
+	; These two lines aren't here in S3K.
+	move.b	#10,y_radius(a0)
+	move.b	#10,x_radius(a0)
+
+	bsr.w	Knuckles_DoLevelCollision2
+
+	; Get distance from floor in 'd1', and angle of floor in 'd3'.
+	jsr	Sonic_CheckFloor
+
+	; If the distance from the floor is suddenly really high, then
+	; Knuckles must have slid off a ledge, so make him enter his falling
+	; state.
+	cmpi.w	#14,d1
+	bge.s	.fall
+
+	add.w	d1,y_pos(a0)
+	move.b	d3,angle(a0)
+
+	move.b	#19,y_radius(a0)
+	move.b	#9,x_radius(a0)
+
+	; This sound does not exist in Sonic 2, so the code to play it was
+	; removed.
+	; Play the sliding sound every 8 frames.
+;	move.b	(Vint_runcount+3).w,d0
+;	andi.b	#7,d0
+;	bne.s	+
+
+;	moveq	#signextendB(sfx_GroundSlide),d0
+;	jsr	(PlaySound).l
+;+
+	rts
+; ---------------------------------------------------------------------------
+; loc_315988:
+.fall:
+	move.b	#2,double_jump_flag(a0)
+	move.b	#AniIDKnuxAni_FallAfterGlide,anim(a0)
+
+	move.b	#19,y_radius(a0)
+	move.b	#9,x_radius(a0)
+
+	bset	#status.player.in_air,(Gliding_collision_flags).w
+	rts
+; ---------------------------------------------------------------------------
+
+Knuckles_Climbing_Wall:
+	tst.b	(Disable_wall_grab).w
+	bmi.w	Knuckles_LetGoOfWall
+
+	; If Knuckles' X coordinate is no longer the same as when he first
+	; latched onto the wall, then detach him from the wall. This is
+	; probably intended to detach Knuckles from the wall if something
+	; physically pushes him away from it.
+	move.w	x_pos(a0),d0
+	cmp.w	x_sub(a0),d0
+	bne.w	Knuckles_LetGoOfWall
+
+	; If an object is now carrying Knuckles, then detach him from the
+	; wall.
+	btst	#status.player.on_object,status(a0)
+	bne.w	Knuckles_LetGoOfWall
+
+	move.w	#0,inertia(a0)
+	move.w	#0,x_vel(a0)
+	move.w	#0,y_vel(a0)
+
+	move.l	#Primary_Collision,(Collision_addr).w
+	cmpi.b	#$D,lrb_solid_bit(a0)
+	beq.s	+
+	move.l	#Secondary_Collision,(Collision_addr).w
++
+	move.b	lrb_solid_bit(a0),d5
+
+	; These two lines aren't in S3K.
+	move.b	#10,y_radius(a0)
+	move.b	#10,x_radius(a0)
+
+	moveq	#0,d1	; Climbing animation delta: make the animation pause.
+
+	btst	#button_up,(Ctrl_1_Held_Logical).w
+	beq.w	.notClimbingUp
+
+;.climbingUp:
+	; Get Knuckles' distance from the wall in 'd1'.
+	move.w	y_pos(a0),d2
+	subi.w	#11,d2
+	bsr.w	GetDistanceFromWall
+
+	; If the wall is far away from Knuckles, then we must have reached a
+	; ledge, so make Knuckles climb up onto it.
+	cmpi.w	#4,d1
+	bge.w	Knuckles_ClimbUp
+
+	; If Knuckles has encountered a small dip in the wall, then make him
+	; stop.
+	tst.w	d1
+	bne.w	.notMoving
+
+	; Get Knuckles' distance from the ceiling in 'd1'.
+	move.b	lrb_solid_bit(a0),d5
+	move.w	y_pos(a0),d2
+	subq.w	#8,d2
+	move.w	x_pos(a0),d3
+	jsr	CheckCeilingDist_WithRadius
+
+	; Check if Knuckles has room above him.
+	tst.w	d1
+	bpl.s	.moveUp
+
+	; Knuckles is bumping into the ceiling, so push him out.
+	sub.w	d1,y_pos(a0)
+
+	moveq	#1,d1	; Climbing animation delta: make the animation play forwards.
+	bra.w	.finishMoving
+; ---------------------------------------------------------------------------
+; loc_315A46:
+.moveUp:
+	subq.w	#1,y_pos(a0)
+
+	; Super Knuckles and Hyper Knuckles climb walls faster.
+	tst.b	(Super_Sonic_flag).w
+	beq.s	+
+	subq.w	#1,y_pos(a0)
++
+	moveq	#1,d1	; Climbing animation delta: make the animation play forwards.
+
+	; Don't let Knuckles climb through the level's upper boundary.
+	move.w	(Camera_Min_Y_pos).w,d0
+
+	; If the level wraps vertically, then don't bother with any of this.
+	cmpi.w	#-$100,d0
+	beq.w	.finishMoving
+
+	; Check if Knuckles is over the level's top boundary.
+	addi.w	#16,d0
+	cmp.w	y_pos(a0),d0
+	ble.w	.finishMoving
+
+	; Knuckles is climbing over the level's top boundary: push him back
+	; down.
+	move.w	d0,y_pos(a0)
+	bra.w	.finishMoving
+; ---------------------------------------------------------------------------
+; loc_315A76:
+.notClimbingUp:
+	btst	#button_down,(Ctrl_1_Held_Logical).w
+	beq.w	.finishMoving
+
+;.climbingDown:
+	; ...I'm not sure what this code is for.
+	cmpi.b	#$BD,mapping_frame(a0)
+	bne.s	+
+	move.b	#$B7,mapping_frame(a0)
+	addq.w	#3,y_pos(a0)
+	subq.w	#3,x_pos(a0)
+	btst	#status.player.x_flip,status(a0)
+	beq.s	+
+	addq.w	#3*2,x_pos(a0)
++
+	; Get Knuckles' distance from the wall in 'd1'.
+	move.w	y_pos(a0),d2
+	addi.w	#11,d2
+	bsr.w	GetDistanceFromWall
+
+	; If Knuckles is no longer against the wall (he has climbed off the
+	; bottom of it) then make him let go.
+	tst.w	d1
+	bne.w	Knuckles_LetGoOfWall
+
+	; Get Knuckles' distance from the floor in 'd1'.
+	move.b	top_solid_bit(a0),d5
+	move.w	y_pos(a0),d2
+	addi.w	#9,d2
+	move.w	x_pos(a0),d3
+	jsr	CheckFloorDist_WithRadius
+
+	; Check if Knuckles has room below him.
+	tst.w	d1
+	bpl.s	.moveDown
+
+	; Knuckles has reached the floor.
+	add.w	d1,y_pos(a0)
+	move.b	(Primary_Angle).w,angle(a0)
+
+	move.w	#0,inertia(a0)
+	move.w	#0,x_vel(a0)
+	move.w	#0,y_vel(a0)
+
+	jsr	Sonic_ResetOnFloor_Part2
+
+	move.b	#AniIDSonAni_Wait,anim(a0)
+
+	rts
+; ---------------------------------------------------------------------------
+; loc_315AF4:
+.moveDown:
+	addq.w	#1,y_pos(a0)
+
+	; Super Knuckles and Hyper Knuckles climb walls faster.
+	tst.b	(Super_Sonic_flag).w
+	beq.s	+
+	addq.w	#1,y_pos(a0)
++
+	moveq	#-1,d1	; Climbing animation delta: make the animation play backwards.
+
+; loc_315B04:
+.finishMoving:
+	; This block of code is in S3K, but not KiS2:
+    if 0
+	; This code detaches Knuckles from the wall if there is ground
+	; directly below him. Note that this code specifically does not run
+	; if the player is holding up or down: this is because similar code
+	; already runs if either of those buttons are being held. Presumably,
+	; this check was added so that Knuckles would properly detach from
+	; the wall if a rising floor (think Marble Garden Zone Act 2) came up
+	; from under him. With that said, KiS2 lacks this logic, and yet
+	; Knuckles seems to detach from the wall in Hill Top Zone's rising
+	; wall section just fine, so I'm not sure whether this code was ever
+	; actually needed in the first place.
+	move.b	(Ctrl_1_Held_Logical).w,d0
+	andi.b	#button_up_mask|button_down_mask,d0
+	bne.s	.isMovingUpOrDown
+
+	; Get Knuckles' distance from the floor in 'd1'.
+	move.b	top_solid_bit(a0),d5
+	move.w	y_pos(a0),d2
+	addi.w	#9,d2
+	move.w	x_pos(a0),d3
+	jsr	CheckFloorDist_WithRadius
+
+	; Check if Knuckles has room below him.
+	tst.w	d1
+	bmi.w	.reachedFloor
+
+	; Bug! 'd1' has been overwritten by 'CheckFloorDist_WithRadius', but
+	; the code after this needs it for updating Knuckles' animation. This
+	; bug is the reason why Knuckles resets to his first climbing frame
+	; when the player is not holding up or down.
+    endif
+
+.isMovingUpOrDown:
+	; If Knuckles has not moved, skip this.
+	tst.w	d1
+	beq.s	.notMoving
+
+	; Only animate every 4 frames.
+	subq.b	#1,double_jump_property(a0)
+	bpl.s	.notMoving
+	move.b	#3,double_jump_property(a0)
+
+	; Add delta to animation frame.
+	add.b	mapping_frame(a0),d1
+
+	; Make the animation loop.
+	cmpi.b	#$B7,d1
+	bhs.s	+
+	move.b	#$BC,d1
++
+	cmpi.b	#$BC,d1
+	bls.s	+
+	move.b	#$B7,d1
++
+	; Apply the frame.
+	move.b	d1,mapping_frame(a0)
+; loc_315B30:
+.notMoving:
+	move.b	#$20,anim_frame_duration(a0)
+	move.b	#0,anim_frame(a0)
+
+	; These two lines aren't in S3K.
+	move.b	#19,y_radius(a0)
+	move.b	#9,x_radius(a0)
+
+	move.w	(Ctrl_1_Held_Logical).w,d0
+	andi.w	#button_A_mask|button_B_mask|button_C_mask,d0
+	beq.s	.hasNotJumped
+
+	; Knuckles has jumped off the wall.
+	move.w	#-$380,y_vel(a0)
+	move.w	#$400,x_vel(a0)
+
+	bchg	#status.player.x_flip,status(a0)
+	bne.s	+
+	neg.w	x_vel(a0)
++
+	bset	#status.player.in_air,status(a0)
+	move.b	#1,jumping(a0)
+
+	move.b	#14,y_radius(a0)
+	move.b	#7,x_radius(a0)
+
+	move.b	#AniIDSonAni_Roll,anim(a0)
+	bset	#status.player.rolling,status(a0)
+	move.b	#0,double_jump_flag(a0)
+; return_315B94:
+.hasNotJumped:
+	rts
+; ---------------------------------------------------------------------------
+
+Knuckles_ClimbUp:
+	move.b	#5,double_jump_flag(a0)		  ; Climb up to	the floor above	you
+
+	cmpi.b	#$BD,mapping_frame(a0)
+	beq.s	+
+
+	move.b	#0,double_jump_property(a0)
+	bsr.s	Knuckles_DoLedgeClimbingAnimation
++
+	rts
+; ---------------------------------------------------------------------------
+; loc_315BAE:
+Knuckles_LetGoOfWall:
+	move.b	#2,double_jump_flag(a0)
+
+	move.w	#(AniIDKnuxAni_FallAfterGlide<<8)|AniIDKnuxAni_FallAfterGlide,anim(a0)
+	move.b	#$CB,mapping_frame(a0)
+	move.b	#7,anim_frame_duration(a0)
+	move.b	#1,anim_frame(a0)
+
+	move.b	#19,y_radius(a0)
+	move.b	#9,x_radius(a0)
+
+	rts
+; End of function Knuckles_GlideControl
+
+
+; =============== S U B	R O U T	I N E =======================================
+
+; sub_315BDA:
+Knuckles_DoLedgeClimbingAnimation:
+	moveq	#0,d0
+	move.b	double_jump_property(a0),d0
+	lea	.frames(pc,d0.w),a1
+
+	move.b	(a1)+,mapping_frame(a0)
+
+	move.b	(a1)+,d0
+	ext.w	d0
+	btst	#status.player.x_flip,status(a0)
+	beq.s	+
+	neg.w	d0
++
+	add.w	d0,x_pos(a0)
+
+	move.b	(a1)+,d1
+	ext.w	d1
+	add.w	d1,y_pos(a0)
+
+	move.b	(a1)+,anim_frame_duration(a0)
+
+	addq.b	#4,double_jump_property(a0)
+	move.b	#0,anim_frame(a0)
+	rts
+; End of function Knuckles_DoLedgeClimbingAnimation
+
+; ---------------------------------------------------------------------------
+; Strangely, the last frame uses frame $D2. It will never be seen, however,
+; because it is immediately overwritten by Knuckles' waiting animation.
+
+; word_315C12:
+.frames:
+	; mapping_frame, x_pos, y_pos, anim_frame_timer
+	dc.b $BD,   3,  -3,   6
+	dc.b $BE,   8, -10,   6
+	dc.b $BF,  -8, -12,   6
+	dc.b $D2,   8,  -5,   6
+.framesEnd:
+
+; =============== S U B	R O U T	I N E =======================================
+
+; sub_315C22:
+GetDistanceFromWall:
+	move.b	lrb_solid_bit(a0),d5
+	btst	#status.player.x_flip,status(a0)
+	bne.s	.facingLeft
+
+;.facingRight:
+	move.w	x_pos(a0),d3
+	jmp	CheckRightWallDist_WithRadius
+; ---------------------------------------------------------------------------
+; loc_315C36:
+.facingLeft:
+	move.w	x_pos(a0),d3
+	subq.w	#1,d3
+	jmp	CheckLeftWallDist_WithRadius
+; End of function GetDistanceFromWall
+
+; ---------------------------------------------------------------------------
+; START	OF FUNCTION CHUNK FOR Knuckles_GlideControl
+; Knuckles_Climbing_Up:
+Knuckles_Climbing_Onto_Ledge:
+	tst.b	anim_frame_duration(a0)
+	bne.s	return_315C7A
+
+	bsr.w	Knuckles_DoLedgeClimbingAnimation
+
+	; Have we reached the end of the ledge-climbing animation?
+	cmpi.b	#Knuckles_DoLedgeClimbingAnimation.framesEnd-Knuckles_DoLedgeClimbingAnimation.frames,double_jump_property(a0)
+	bne.s	return_315C7A
+
+	; Yes.
+	move.w	#0,inertia(a0)
+	move.w	#0,x_vel(a0)
+	move.w	#0,y_vel(a0)
+
+	btst	#status.player.x_flip,status(a0)
+	beq.s	+
+	subq.w	#1,x_pos(a0)
++
+	jsr	Sonic_ResetOnFloor_Part2
+	move.b	#AniIDSonAni_Wait,anim(a0)
+
+return_315C7A:
+	rts
+; END OF FUNCTION CHUNK	FOR Knuckles_GlideControl
+
+; =============== S U B	R O U T	I N E =======================================
+
+; sub_315C7C:
+Knuckles_DoGlidingAnimation:
+	move.b	#$20,anim_frame_duration(a0)
+	move.b	#0,anim_frame(a0)
+	move.w	#(AniIDKnuxAni_Glide<<8)|AniIDKnuxAni_Glide,anim(a0)
+	bclr	#status.player.pushing,status(a0)
+	bclr	#status.player.x_flip,status(a0)
+
+	; Update Knuckles' frame, depending on where he's facing.
+	moveq	#0,d0
+	move.b	double_jump_property(a0),d0
+	addi.b	#$10,d0
+	lsr.w	#5,d0
+	move.b	.frames(pc,d0.w),d1
+	move.b	d1,mapping_frame(a0)
+	cmpi.b	#$C4,d1
+	bne.s	+
+	bset	#status.player.x_flip,status(a0)
+	move.b	#$C0,mapping_frame(a0)
++
+	rts
+; End of function Knuckles_DoGlidingAnimation
+
+; ---------------------------------------------------------------------------
+; byte_315CC2:
+.frames:	dc.b $C0, $C1, $C2, $C3, $C4, $C3, $C2, $C1
+
+; =============== S U B	R O U T	I N E =======================================
+
+
+Knuckles_GlideSpeedControl:
+	cmpi.b	#1,double_jump_flag(a0)
+	bne.w	.doNotKillspeed
+
+	move.w	inertia(a0),d0
+	cmpi.w	#$400,d0
+	bhs.s	.mediumSpeed
+
+;.lowSpeed:
+	; Increase Knuckles' speed.
+	addq.w	#8,d0
+	bra.s	.applySpeed
+; ---------------------------------------------------------------------------
+; loc_315CE2:
+.mediumSpeed:
+	; If Knuckles is at his speed limit, then don't increase his speed.
+	cmpi.w	#$1800,d0
+	bhs.s	.applySpeed
+
+	; If Knuckles is turning, then don't increase his speed either.
+	move.b	double_jump_property(a0),d1
+	andi.b	#$7F,d1
+	bne.s	.applySpeed
+
+	; Increase Knuckles' speed.
+	addq.w	#4,d0
+
+	; Super Knuckles and Hyper Knuckles glide faster.
+	tst.b	(Super_Sonic_flag).w
+	beq.s	.applySpeed
+	addq.w	#8,d0
+; loc_315CFC:
+.applySpeed:
+	move.w	d0,inertia(a0)
+
+	move.b	double_jump_property(a0),d0
+	btst	#button_left,(Ctrl_1_Held_Logical).w
+	beq.s	.notHoldingLeft
+
+;.holdingLeft:
+	; Playing is holding left.
+	cmpi.b	#$80,d0
+	beq.s	.notHoldingLeft
+	tst.b	d0
+	bpl.s	+
+	neg.b	d0
++
+	addq.b	#2,d0
+	bra.s	.setNewTurningValue
+; ---------------------------------------------------------------------------
+; loc_315D1C:
+.notHoldingLeft:
+	btst	#button_right,(Ctrl_1_Held_Logical).w
+	beq.s	.notHoldingRight
+
+;.holdingRight:
+	; Playing is holding right.
+	tst.b	d0
+	beq.s	.notHoldingRight
+	bmi.s	+
+	neg.b	d0
++
+	addq.b	#2,d0
+	bra.s	.setNewTurningValue
+; ---------------------------------------------------------------------------
+; loc_315D30:
+.notHoldingRight:
+	move.b	d0,d1
+	andi.b	#$7F,d1
+	beq.s	.setNewTurningValue
+	addq.b	#2,d0
+; loc_315D3A:
+.setNewTurningValue:
+	move.b	d0,double_jump_property(a0)
+
+	move.b	double_jump_property(a0),d0
+	jsr	CalcSine
+	muls.w	inertia(a0),d1
+	asr.l	#8,d1
+	move.w	d1,x_vel(a0)
+
+	; Is Knuckles is falling at a high speed, then create a parachute
+	; effect, where gliding makes Knuckles fall slower.
+	cmpi.w	#$80,y_vel(a0)
+	blt.s	.fallingSlow
+	subi.w	#$20,y_vel(a0)
+	bra.s	.fallingFast
+; ---------------------------------------------------------------------------
+; loc_315D62:
+.fallingSlow:
+	; Apply gravity.
+	addi.w	#$20,y_vel(a0)
+; loc_315D68:
+.fallingFast:
+	; If Knuckles is above the level's top boundary, then kill his
+	; horizontal speed.
+	move.w	(Camera_Min_Y_pos).w,d0
+	cmpi.w	#-$100,d0
+	beq.w	.doNotKillspeed
+
+	addi.w	#$10,d0
+	cmp.w	y_pos(a0),d0
+	ble.w	.doNotKillspeed
+
+	asr.w	x_vel(a0)
+	asr.w	inertia(a0)
+; loc_315D88:
+.doNotKillspeed:
+	cmpi.w	#$60,(Camera_Y_pos_bias).w
+	beq.s	.doNotModifyBias
+	bhs.s	+
+	addq.w	#2*2,(Camera_Y_pos_bias).w
++
+	subq.w	#2,(Camera_Y_pos_bias).w
+; return_315D9A:
+.doNotModifyBias:
+	rts
+; End of function Knuckles_GlideSpeedControl
+
+
+Knuckles_DoLevelCollision2:
+	move.l	#Primary_Collision,(Collision_addr).w
+	cmpi.b	#$C,top_solid_bit(a0)
+	beq.s	+
+	move.l	#Secondary_Collision,(Collision_addr).w
++
+	move.b	lrb_solid_bit(a0),d5
+	move.w	x_vel(a0),d1
+	move.w	y_vel(a0),d2
+	jsr	(CalcAngle).l
+	subi.b	#$20,d0
+	andi.b	#$C0,d0
+	cmpi.b	#$40,d0
+	beq.w	Sonic_HitLeftWall_2
+	cmpi.b	#$80,d0
+	beq.w	Sonic_HitCeilingAndWalls_2
+	cmpi.b	#$C0,d0
+	beq.w	Sonic_HitRightWall_2
+	jsr	CheckLeftWallDist
+	tst.w	d1
+	bpl.s	+
+	sub.w	d1,x_pos(a0)
+	move.w	#0,x_vel(a0) ; stop Sonic since he hit a wall
+	bset	#status.player.pushing,(Gliding_collision_flags).w
++
+	jsr	CheckRightWallDist
+	tst.w	d1
+	bpl.s	+
+	add.w	d1,x_pos(a0)
+	move.w	#0,x_vel(a0) ; stop Sonic since he hit a wall
+	bset	#status.player.pushing,(Gliding_collision_flags).w
++
+	jsr	Sonic_CheckFloor
+	tst.w	d1
+	bpl.s	return_1AF8A_2
+	add.w	d1,y_pos(a0)
+	move.b	d3,angle(a0)
+	move.w	#0,y_vel(a0)
+	bclr	#status.player.in_air,(Gliding_collision_flags).w
+
+return_1AF8A_2:
+	rts
+; ===========================================================================
+; loc_1AF8C:
+Sonic_HitLeftWall_2:
+	jsr	CheckLeftWallDist
+	tst.w	d1
+	bpl.s	Sonic_HitCeiling_2 ; branch if distance is positive (not inside wall)
+	sub.w	d1,x_pos(a0)
+	move.w	#0,x_vel(a0) ; stop Sonic since he hit a wall
+	bset	#status.player.pushing,(Gliding_collision_flags).w
+
+; loc_1AFA6:
+Sonic_HitCeiling_2:
+	jsr	Sonic_CheckCeiling
+	tst.w	d1
+	bpl.s	Sonic_HitFloor_2 ; branch if distance is positive (not inside ceiling)
+	neg.w	d1
+	cmpi.w	#20,d1
+	bhs.s	loc_316A08
+	add.w	d1,y_pos(a0)
+	tst.w	y_vel(a0)
+	bpl.s	return_1AFBE_2
+	move.w	#0,y_vel(a0) ; stop Sonic in y since he hit a ceiling
+
+return_1AFBE_2:
+	rts
+
+loc_316A08:
+	jsr	CheckRightWallDist
+	tst.w	d1
+	bpl.s	return_316A20
+	add.w	d1,x_pos(a0)
+	move.w	#0,x_vel(a0)
+	bset	#status.player.pushing,(Gliding_collision_flags).w
+
+return_316A20:
+	rts
+; ===========================================================================
+; loc_1AFC0:
+Sonic_HitFloor_2:
+	tst.w	y_vel(a0)
+	bmi.s	return_1AFE6_2
+	jsr	Sonic_CheckFloor
+	tst.w	d1
+	bpl.s	return_1AFE6_2
+	add.w	d1,y_pos(a0)
+	move.b	d3,angle(a0)
+	move.w	#0,y_vel(a0)
+	bclr	#status.player.in_air,(Gliding_collision_flags).w
+
+return_1AFE6_2:
+	rts
+; ===========================================================================
+; loc_1AFE8:
+Sonic_HitCeilingAndWalls_2:
+	jsr	CheckLeftWallDist
+	tst.w	d1
+	bpl.s	+
+	sub.w	d1,x_pos(a0)
+	move.w	#0,x_vel(a0)	; stop Sonic since he hit a wall
+	bset	#status.player.pushing,(Gliding_collision_flags).w
++
+	jsr	CheckRightWallDist
+	tst.w	d1
+	bpl.s	+
+	add.w	d1,x_pos(a0)
+	move.w	#0,x_vel(a0)	; stop Sonic since he hit a wall
+	bset	#status.player.pushing,(Gliding_collision_flags).w
++
+	jsr	Sonic_CheckCeiling
+	tst.w	d1
+	bpl.s	return_1B042_2
+	sub.w	d1,y_pos(a0)
+	move.w	#0,y_vel(a0) ; stop Sonic in y since he hit a ceiling
+
+return_1B042_2:
+	rts
+; ===========================================================================
+; loc_1B044:
+Sonic_HitRightWall_2:
+	jsr	CheckRightWallDist
+	tst.w	d1
+	bpl.s	Sonic_HitCeiling2_2
+	add.w	d1,x_pos(a0)
+	move.w	#0,x_vel(a0) ; stop Sonic since he hit a wall
+	bset	#status.player.pushing,(Gliding_collision_flags).w
+
+; identical to Sonic_HitCeiling...
+; loc_1B05E:
+Sonic_HitCeiling2_2:
+	jsr	Sonic_CheckCeiling
+	tst.w	d1
+	bpl.s	Sonic_HitFloor2_2
+	sub.w	d1,y_pos(a0)
+	tst.w	y_vel(a0)
+	bpl.s	return_1B076_2
+	move.w	#0,y_vel(a0) ; stop Sonic in y since he hit a ceiling
+
+return_1B076_2:
+	rts
+; ===========================================================================
+; identical to Sonic_HitFloor...
+; loc_1B078:
+Sonic_HitFloor2_2:
+	tst.w	y_vel(a0)
+	bmi.s	return_1B09E_2
+	jsr	Sonic_CheckFloor
+	tst.w	d1
+	bpl.s	return_1B09E_2
+	add.w	d1,y_pos(a0)
+	move.b	d3,angle(a0)
+	move.w	#0,y_vel(a0)
+	bclr	#status.player.in_air,(Gliding_collision_flags).w
+
+return_1B09E_2:
+	rts
+; End of function Knuckles_DoLevelCollision2
+	even
 
 ; ===========================================================================
 	if padToPowerOfTwo && (*-StartOfRom)&(*-StartOfRom-1)

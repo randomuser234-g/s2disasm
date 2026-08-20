@@ -47,6 +47,8 @@ subtype =		$28
 ; conventions specific to Sonic/Tails (Obj01, Obj02, and ObjDB):
 ; note: $1F, $20, and $21 are unused and available (however, $1F is cleared by loc_A53A and ObjB2_Landed_on_plane)
 inertia =		$14 ; and $15 ; directionless representation of speed... not updated in the air
+double_jump_property =	$1F
+double_jump_flag =	$21
 flip_angle =		$27 ; angle about the x axis (360 degrees = 256) (twist/tumble)
 air_left =		$28
 flip_turned =		$29 ; 0 for normal, 1 to invert flipping (it's a 180 degree rotation about the axis of Sonic's spine, so he stays in the same position but looks turned around)
@@ -1049,6 +1051,16 @@ AniIDTailsAni_SwimUp		= id(TailsAni_SwimUp_ptr)	; 43 ; $26
 AniIDTailsAni_SwimCarry		= id(TailsAni_SwimCarry_ptr)	; 44 ; $27
 AniIDTailsAni_SwimTired		= id(TailsAni_SwimTired_ptr)	; 45 ; $28
 
+offset :=	KnucklesAniData
+ptrsize :=	2
+idstart :=	0
+
+AniIDKnuxAni_Glide		= id(KnuxAni_Glide_ptr)			; 32 ; $20
+AniIDKnuxAni_FallAfterGlide	= id(KnuxAni_FallAfterGlide_ptr)	; 33 ; $21
+AniIDKnuxAni_ClimbLedge		= id(KnuxAni_ClimbLedge_ptr)		; 34 ; $22
+AniIDKnuxAni_LandAfterGlide	= id(KnuxAni_LandAfterGlide_ptr)	; 35 ; $23
+AniIDKnuxAni_ShadowBox		= id(KnuxAni_ShadowBox_ptr)		; 36 ; $24
+
 
 ; Other sizes
 palette_line_size =		$10*2	; 16 word entries
@@ -1500,8 +1512,8 @@ Tails_flight_timer:		ds.b	1	; timer to cancel flight
 ; extra variables for the second player (CPU) in 1-player mode
 Tails_control_counter:		ds.w	1	; how long until the CPU takes control
 Tails_respawn_counter:		ds.w	1
-Sonic_doublejump:		ds.b	1	; unused, now used for extra abilities
-Tails_doublejump:		ds.b	1	; unused
+Player1_character_id:		ds.b	1	; unused, now used for who is who
+				ds.b	1	; unused
 Tails_CPU_routine:		ds.w	1
 Tails_CPU_target_x:		ds.w	1
 Tails_CPU_target_y:		ds.w	1
@@ -1609,7 +1621,9 @@ Collision_addr:			ds.l	1
 Boss_defeated_flag:		ds.b	1
 				ds.b	2	; $FFFFF7A8-$FFFFF7A9 ; seems unused
 Current_Boss_ID:		ds.b	1
-				ds.b	5	; $FFFFF7AB-$FFFFF7AF ; seems unused
+Gliding_collision_flags:	ds.b	1
+Disable_wall_grab:		ds.b	1	; Leftover from S3K: only read, and never written.
+				ds.b	3	; $FFFFF7AB-$FFFFF7AF ; seems unused
 MTZ_Platform_Cog_X:		ds.w	1	; X position of moving MTZ platform for cog animation.
 MTZCylinder_Angle_Sonic:	ds.b	1
 MTZCylinder_Angle_Tails:	ds.b	1
