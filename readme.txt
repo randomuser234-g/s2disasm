@@ -31,6 +31,8 @@ or using UP + A/B/C in the air, being caught and using the P1 D-pad
 -invincible temporarily
 -if conditions are met you turn super with this button combo
 
+-playable knuckles
+
 -stop Sonic's speed from changing underwater if he has speed shoes
 
 -No air speed cap
@@ -46,6 +48,10 @@ the clone sonic's palette can look off
 the clone sonic copies current frame rather than at the time of the action, desync in action vs animation
 
 clone doesn't copy tails' tails, some sprites are off
+
+level design not designed around extra abilities, could go out of bounds
+
+special stage results doesn't have unique behavior for knuckles
 
 can't compile for REV2 due to errors
 
