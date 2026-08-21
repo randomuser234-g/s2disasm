@@ -23200,7 +23200,7 @@ Obj17_Init:
 	moveq	#0,d6
 ; loc_10372:
 Obj17_MakeHelix:
-	bsr.w	AllocateObjectAfterCurrent
+	jsr	AllocateObjectAfterCurrent
 	bne.s	Obj17_Main
 	addq.b	#1,subtype(a0)
     if object_size<>$40
@@ -92136,8 +92136,8 @@ TailsArtTileclone:
 AfterTiles:
 	move.l	(MainCharacter+mappings),mappings(a0)	; load player mappings
 		move.w	#$100,priority(a0)
-		move.b	#$18,x_radius(a0)
-		move.b	#$18,y_radius(a0)
+		move.b	#$9,x_radius(a0)	;same height as tails
+		move.b	#$F,y_radius(a0)
 		move.b	#4,render_flags(a0)
 		rts
 ; ===========================================================================
@@ -92193,15 +92193,15 @@ CheckIfDies:
 	bhi.s	PlayerDontKill	; If there was any time left, don't continue.
 
 	move.w	(MainCharacter+x_pos).w,d0
-	add.w	#$10,d0	
 	sub.w	x_pos(a0),d0
-	cmpi.w	#$20,d0		;is the main character within this range?
+	add.w	#$E,d0	
+	cmpi.w	#$1C,d0		;is the main character within this range?
 	bhs.s	PlayerDontKill	;if not, don't die
 CheckCloneY:
 	move.w	(MainCharacter+y_pos).w,d0
-	add.w	#$10,d0
 	sub.w	y_pos(a0),d0
-	cmpi.w	#$20,d0		;is the main character within this range?
+	add.w	#$E,d0
+	cmpi.w	#$1C,d0		;is the main character within this range?
 	bhs.s	PlayerDontKill	;if not, don't die
 	
 PlayerCollided:
