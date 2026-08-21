@@ -9603,17 +9603,43 @@ Obj5E:
 	moveq	#0,d1
 	tst.b	(SS_2p_Flag).w
 	beq.s	+
-	addq.w	#6,d1
+	addq.w	#8,d1
 	tst.b	(Graphics_Flags).w
 	bpl.s	++
 	addq.w	#1,d1
 	bra.s	++
 ; ---------------------------------------------------------------------------
-+	move.w	(Player_mode).w,d1
++	;move.w	(Player_mode).w,d1	;rather than player_mode being used for maths, change it to checks upon checks
+	move.w	#0,d1
 	andi.w	#3,d1
+.chkchar:
+	tst.w	(Player_mode).w
+	bne.s	.chksonic
+	bra.s	.chkjapan
+.chksonic:
+	cmpi.w	#1,(Player_mode).w
+	bne.s	.chktails
+	addq.w	#2,d1
+	bra.s	+
+.chktails:
+	cmpi.w	#2,(Player_mode).w
+	bne.s	.chkknuxtails
+	addq.w	#3,d1
+	bra.s	.chkjapan
+.chkknuxtails:
+	cmpi.w	#3,(Player_mode).w
+	bne.s	.chkknux
+	addq.w	#5,d1
+	bra.s	.chkjapan
+.chkknux:
+	cmpi.w	#4,(Player_mode).w
+	bne.s	+
+	addq.w	#7,d1
+	bra.s	+
+.chkjapan:
 	tst.b	(Graphics_Flags).w
 	bpl.s	+
-	addq.w	#3,d1 ; set special stage Tails name to "TAILS" instead of MILES
+	addq.w	#1,d1 ; set special stage Tails name to "TAILS" instead of MILES
 +
 	add.w	d1,d1
 	moveq	#0,d2
@@ -9637,13 +9663,15 @@ Obj5E:
 ; off_7042:
 SSHUDLayout:	offsetTable
 		offsetTableEntry.w SSHUD_SonicMilesTotal	; 0
-		offsetTableEntry.w SSHUD_Sonic			; 1
-		offsetTableEntry.w SSHUD_Miles			; 2
-		offsetTableEntry.w SSHUD_SonicTailsTotal	; 3
-		offsetTableEntry.w SSHUD_Sonic_2		; 4
-		offsetTableEntry.w SSHUD_Tails			; 5
-		offsetTableEntry.w SSHUD_SonicMiles		; 6
-		offsetTableEntry.w SSHUD_SonicTails		; 7
+		offsetTableEntry.w SSHUD_SonicTailsTotal	; 1
+		offsetTableEntry.w SSHUD_Sonic			; 2	
+		offsetTableEntry.w SSHUD_Miles			; 3
+		offsetTableEntry.w SSHUD_Tails			; 4
+		offsetTableEntry.w SSHUD_KnucklesMiles		; 5	
+		offsetTableEntry.w SSHUD_KnucklesTails		; 6
+		offsetTableEntry.w SSHUD_Knuckles		; 7
+		offsetTableEntry.w SSHUD_SonicMiles		; 8
+		offsetTableEntry.w SSHUD_SonicTails		; 9
 
 ; byte_7052:
 SSHUD_SonicMilesTotal:
@@ -9667,10 +9695,18 @@ SSHUD_SonicTailsTotal:
 	dc.b   $80
 	dc.b   0,  2,  3
 ; byte_7062:
-SSHUD_Sonic_2:
+SSHUD_KnucklesMiles:
+	dc.b   3		; Sprite count
+	dc.b   $80		; X-pos
+	dc.b   4,  1,  3	; Sprite 1 frame, Sprite 2 frame, etc
+SSHUD_KnucklesTails:
+	dc.b   3		; Sprite count
+	dc.b   $80		; X-pos
+	dc.b   4,  2,  3	; Sprite 1 frame, Sprite 2 frame, etc
+SSHUD_Knuckles:
 	dc.b   1
 	dc.b   $D4
-	dc.b   0
+	dc.b   4
 ; byte_7065:
 SSHUD_Tails:
 	dc.b   1
@@ -69938,8 +69974,8 @@ byte_34208:
 ; ----------------------------------------------------------------------------
 Obj09_MapUnc_34212:	include "mappings/sprite/obj09.asm"
 		even
-Obj09_MapUnc_KTE:	include "mappings/sprite/obj09_k.asm"
-		even
+;Obj09_MapUnc_KTE:	include "mappings/sprite/obj09_k.asm"	;not used, knuckles uses sonic's mappings (can look off
+;		even
 ; ----------------------------------------------------------------------------
 ; sprite dplc - uses ArtNem_SpecialSonicAndTails
 ; ----------------------------------------------------------------------------
@@ -69949,8 +69985,8 @@ Obj10_MapRUnc:	binclude "mappings/spriteDPLC/obj10.bin"
 		even
 Obj88_MapRUnc:	binclude "mappings/spriteDPLC/obj88.bin"
 		even
-Obj09_MapRUnc_KTE:	include	"mappings/spriteDPLC/obj09_k.asm"
-	even
+;Obj09_MapRUnc_KTE:	include	"mappings/spriteDPLC/obj09_k.asm"
+;	even
 ; ----------------------------------------------------------------------------
 ; sprite mappings for special stage shadows
 ; ----------------------------------------------------------------------------
@@ -89957,6 +89993,7 @@ PlrList_SpecialStage: plrlistheader
 	plreq ArtTile_ArtNem_SpecialBack, ArtNem_SpecialBack
 	plreq ArtTile_ArtNem_SpecialStars, ArtNem_SpecialStars
 	plreq ArtTile_ArtNem_SpecialTailsText, ArtNem_SpecialTailsText
+	plreq ArtTile_ArtNem_life_counter, ArtNem_SpecialKnucklesText
 PlrList_SpecialStage_End
 ;---------------------------------------------------------------------------------------
 ; PATTERN LOAD REQUEST LIST
