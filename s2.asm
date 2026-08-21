@@ -6244,8 +6244,8 @@ CheckLoadSignpostArt:
 	tst.w	(Two_player_mode).w
 	bne.s	+	; rts
 	moveq	#PLCID_SignpostKnuckles,d0 ; <== PLC_30
-	cmpi.w	#3,(Player_mode).w
-	bge.w	LoadPLC2
+	cmpi.w	#3,(Player_mode).w	;knux alone/knuckles and tails?
+	bge.w	LoadPLC2		;if not, branch
 	moveq	#PLCID_Signpost,d0 ; <== PLC_1F
 	bra.w	LoadPLC2		; load signpost art
 ; ---------------------------------------------------------------------------
@@ -27850,7 +27850,7 @@ loc_140CE:
 loc_14102:
 	moveq	#$F,d0			; ==> EOL_Knuckles
 	cmpi.w	#3,(Player_mode).w	; is this a Knuckles game?
-	beq.s	loc_14118		; if yes, use "KNUCKLES GOT" frame
+	bge.s	loc_14118		; if yes, use "KNUCKLES GOT" frame
 	moveq	#0,d0
 	cmpi.w	#2,(Player_mode).w
 	bne.s	loc_14118
