@@ -25644,11 +25644,11 @@ SolidObject_Monitor_Sonic:
 	beq.w	.nocol		; if yes, branch
 	cmpi.b	#AniIDSonAni_InstaShield,anim(a1)		; is Sonic instashield?
 	beq.w	.nocol		; if yes, branch
-	cmpi.b	#ObjID_Knuckles,id(a0)			; Is player Knuckles?
+	cmpi.b	#ObjID_Knuckles,id(a1)			; Is player Knuckles?
 	bne.w	SolidObject_cont			; If not, branch
-	cmpi.b	#1,double_jump_flag(a0)			; gliding?
+	cmpi.b	#1,double_jump_flag(a1)			; gliding?
 	beq.s	.nocol				;if yes, branch
-	cmpi.b	#3,double_jump_flag(a0)			;sliding?	
+	cmpi.b	#3,double_jump_flag(a1)			;sliding?	
 	beq.s	.nocol
 	bra.w	SolidObject_cont		; otherwise, solid object
 .nocol:
@@ -51162,8 +51162,13 @@ loc_24E60:
 	bne.s	loc_24E96
 	cmpi.b	#AniIDSonAni_Roll,objoff_32(a0)
 	beq.s	loc_24E76
+	cmpi.b	#AniIDSonAni_InstaShield,objoff_32(a0)
+	beq.s	loc_24E76
 	cmpi.b	#AniIDSonAni_Roll,objoff_33(a0)
-	bne.s	BranchTo_JmpTo13_MarkObjGone
+	beq.s	loc_24E76
+	cmpi.b	#AniIDSonAni_InstaShield,objoff_33(a0)
+	beq.s	loc_24E76
+	bra.s	BranchTo_JmpTo13_MarkObjGone
 
 loc_24E76:
 	lea	(MainCharacter).w,a1 ; a1=character
@@ -51182,7 +51187,11 @@ loc_24E96:
 	andi.b	#p1_standing,d1
 	beq.s	loc_24EE8
 	cmpi.b	#AniIDSonAni_Roll,objoff_32(a0)
-	bne.s	BranchTo_JmpTo13_MarkObjGone
+	bne.s	.isrolling
+	cmpi.b	#AniIDSonAni_InstaShield,objoff_32(a0)
+	bne.s	.isrolling
+	bra.s	BranchTo_JmpTo13_MarkObjGone
+.isrolling
 	lea	(MainCharacter).w,a1 ; a1=character
 	move.w	objoff_34(a0),d1
 	bsr.s	loc_24EB8
@@ -51191,7 +51200,10 @@ loc_24E96:
 
 loc_24EB2:
 	cmpi.b	#AniIDSonAni_Roll,d0
-	bne.s	loc_24ED4
+	bne.s	loc_24EB8
+	cmpi.b	#AniIDSonAni_InstaShield,d0
+	bne.s	loc_24EB8
+	bra.s	loc_24ED4
 
 loc_24EB8:
 	bset	#status.player.rolling,status(a1)
@@ -51211,7 +51223,11 @@ loc_24EE8:
 	andi.b	#p2_standing,d0
 	beq.w	BranchTo_JmpTo13_MarkObjGone
 	cmpi.b	#AniIDSonAni_Roll,objoff_33(a0)
+	beq.w	.isrolling
+	cmpi.b	#AniIDSonAni_InstaShield,objoff_33(a0)
+	beq.w	.isrolling
 	bne.w	BranchTo_JmpTo13_MarkObjGone
+.isrolling:
 	lea	(Sidekick).w,a1 ; a1=character
 	move.w	objoff_36(a0),d1
 	bsr.s	loc_24EB8
@@ -81237,8 +81253,12 @@ ObjC2_Main:
 ; ===========================================================================
 ; loc_3C366:
 ObjC2_Bust:
-	cmpi.b	#2,objoff_30(a0)
-	bne.s	+
+	cmpi.b	#AniIDSonAni_Roll,objoff_30(a0)		;2
+	beq.s	.isrolling
+	cmpi.b	#AniIDSonAni_InstaShield,objoff_30(a0)	;$34
+	beq.s	.isrolling
+	bra.s	+
+.isrolling:
 	move.w	#$2880,(Camera_Min_X_pos).w
 	bclr	#p1_standing_bit,status(a0)
 	_move.b	#ObjID_Explosion,id(a0) ; load 0bj27 (transform into explosion)
