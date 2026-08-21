@@ -51191,7 +51191,7 @@ loc_24E96:
 	cmpi.b	#AniIDSonAni_InstaShield,objoff_32(a0)
 	bne.s	.isrolling
 	bra.s	BranchTo_JmpTo13_MarkObjGone
-.isrolling
+.isrolling:
 	lea	(MainCharacter).w,a1 ; a1=character
 	move.w	objoff_34(a0),d1
 	bsr.s	loc_24EB8
@@ -51200,9 +51200,9 @@ loc_24E96:
 
 loc_24EB2:
 	cmpi.b	#AniIDSonAni_Roll,d0
-	bne.s	loc_24EB8
+	beq.s	loc_24EB8
 	cmpi.b	#AniIDSonAni_InstaShield,d0
-	bne.s	loc_24EB8
+	beq.s	loc_24EB8
 	bra.s	loc_24ED4
 
 loc_24EB8:
@@ -51226,7 +51226,7 @@ loc_24EE8:
 	beq.w	.isrolling
 	cmpi.b	#AniIDSonAni_InstaShield,objoff_33(a0)
 	beq.w	.isrolling
-	bne.w	BranchTo_JmpTo13_MarkObjGone
+	bra.w	BranchTo_JmpTo13_MarkObjGone
 .isrolling:
 	lea	(Sidekick).w,a1 ; a1=character
 	move.w	objoff_36(a0),d1
