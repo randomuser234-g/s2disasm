@@ -51987,14 +51987,15 @@ Obj2B_Init:
     if fixBugs
 	ori.b	#1<<render_flags.level_fg|1<<render_flags.explicit_height,render_flags(a0)
 	move.b	#$1C,width_pixels(a0)
-	move.b	#$20,y_radius(a0)
+	;move.b	#$20,y_radius(a0)	
     else
 	; This should use the accurate height check and larger size values, since
 	; right now it vanishes whilst partially on-screen.
 	ori.b	#1<<render_flags.level_fg,render_flags(a0)
 	move.b	#$10,width_pixels(a0)
-	move.b	#$18,y_radius(a0)
+	;move.b	#$18,y_radius(a0)
     endif
+	move.b	#$18,y_radius(a0)	;keep old height, sonic can't jump over it as easily otherwise (noticeable at start)
 	move.b	#4,priority(a0)
 ; loc_25A9C:
 Obj2B_Main:
@@ -73492,7 +73493,7 @@ loc_36ADC:
 	abs.w	d2
 	cmpi.w	#$60,d2
 	bls.s	+
-	jmp	JmpTo39_MarkObjGone
+	jmp	MarkObjGone	;remove JmpTo39_MarkObjGone
 ; ===========================================================================
 +
 	addq.b	#2,routine(a0)
@@ -73503,7 +73504,7 @@ loc_36ADC:
 ; loc_36B00:
 Obj8D_Animate:
 	lea	(Ani_obj8D_b).l,a1
-	jsr	JmpTo25_AnimateSprite
+	jsr	AnimateSprite	; remove JmpTo25_AnimateSprite
 	jmpto	JmpTo39_MarkObjGone
 ; ===========================================================================
 
@@ -73525,7 +73526,7 @@ Obj8D_Directions:
 ; ===========================================================================
 
 loc_36B34:
-	jsr	JmpTo26_ObjectMove
+	jsr	ObjectMove	;remove JmpTo26_ObjectMove
 	jsr	(ObjCheckFloorDist).l
 	cmpi.w	#-1,d1
 	blt.s	loc_36B5C
