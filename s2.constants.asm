@@ -596,7 +596,9 @@ PLCID_Tornado =		id(PLCptr_Tornado) ; 3F
 PLCID_Capsule =		id(PLCptr_Capsule) ; 40
 PLCID_Explosion =	id(PLCptr_Explosion) ; 41
 PLCID_ResultsTails =	id(PLCptr_ResultsTails) ; 42
-
+PLCID_Std2_KTE =	id(PLCptr_Std2_KTE) ; 43
+PLCID_ResultsKnuckles =	id(PLCptr_ResultsKnuckles) ; 44
+PLCID_SignpostKnuckles =	id(PLCptr_SignpostKnuckles) ; 45
 ; Object IDs
 offset :=	Obj_Index
 ptrsize :=	4
@@ -2644,6 +2646,7 @@ ArtTile_ArtNem_HUD                    = ArtTile_ArtNem_Powerups + $4A
 ArtTile_ArtUnc_Sonic                  = $0780
 ArtTile_ArtUnc_Tails                  = $07A0
 ArtTile_ArtUnc_Tails_Tails            = $07B0
+ArtTile_ArtNem_ResultsK               = $0550				; "K" letter
 
 ; ---------------------------------------------------------------------------
 ; HUD. The HUD components are linked in a chain, and linked to

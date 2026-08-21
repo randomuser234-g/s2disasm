@@ -4772,10 +4772,10 @@ MusicList2: zoneOrderedTable 1,1
 Level:
 	bset	#GameModeFlag_TitleCard,(Game_Mode).w ; add $80 to screen mode (for pre level sequence)
 	tst.w	(Demo_mode_flag).w	; test the old flag for the credits demos (now unused)
-	bmi.s	+
+	bmi.s	.notdemo
 	move.b	#MusID_FadeOut,d0
 	bsr.w	PlaySound	; fade out music
-+
+.notdemo
 	bsr.w	ClearPLC
 	bsr.w	Pal_FadeToBlack
 	tst.w	(Demo_mode_flag).w
@@ -4802,14 +4802,19 @@ Level:
 	beq.s	+
 	bsr.w	LoadPLC
 +
-	moveq	#PLCID_Std2,d0
+	bsr.w	Level_SetPlayerMode	; set player mode before loading the PLC
+	moveq	#PLCID_Std2,d0		; get regular assets
+	cmpi.w	#3,(Player_mode).w	; is this a Knuckles game?
+	blt.s	.notKnuckles		; if not, skip
+	moveq	#PLCID_Std2_KTE,d0	; use Knuckles assets instead
+.notKnuckles:
 	bsr.w	LoadPLC
-	bsr.w	Level_SetPlayerMode
 	moveq	#PLCID_MilesLife2P,d0
 	tst.w	(Two_player_mode).w
 	bne.s	+
 	cmpi.w	#2,(Player_mode).w
 	bne.s	Level_ClrRam
+
 	addq.w	#PLCID_MilesLife-PLCID_MilesLife2P,d0
 +
 	tst.b	(Graphics_Flags).w
@@ -6238,6 +6243,9 @@ CheckLoadSignpostArt:
 	move.w	d1,(Camera_Min_X_pos).w ; prevent camera from scrolling back to the left
 	tst.w	(Two_player_mode).w
 	bne.s	+	; rts
+	moveq	#PLCID_SignpostKnuckles,d0 ; <== PLC_30
+	cmpi.w	#3,(Player_mode).w
+	bge.w	LoadPLC2
 	moveq	#PLCID_Signpost,d0 ; <== PLC_1F
 	bra.w	LoadPLC2		; load signpost art
 ; ---------------------------------------------------------------------------
@@ -6255,7 +6263,8 @@ SignpostUpdateTailsBounds:
 	cmp.w	(Tails_Min_X_pos).w,d1
 	beq.s	+	; rts
 	move.w	d1,(Tails_Min_X_pos).w ; prevent Tails from going past new left boundary
-+	rts
++
+	rts
 ; End of function CheckLoadSignpostArt
 
 
@@ -10479,10 +10488,13 @@ ContinueScreen:
 	lea	(ArtNem_ContinueTails).l,a0
 	bsr.w	NemDec
 	move.l	#vdpComm(tiles_to_bytes(ArtTile_ArtNem_MiniContinue),VRAM,WRITE),(VDP_control_port).l
-	lea	(ArtNem_MiniSonic).l,a0
-	cmpi.w	#2,(Player_mode).w
-	bne.s	+
+	lea	(ArtNem_MiniKnuckles).l,a0
+	cmpi.w	#3,(Player_mode).w
+	bge.s	+
 	lea	(ArtNem_MiniTails).l,a0
+	cmpi.w	#2,(Player_mode).w
+	beq.s	+
+	lea	(ArtNem_MiniSonic).l,a0
 +
 	bsr.w	NemDec
 	moveq	#$A,d1
@@ -13198,6 +13210,10 @@ EndingSequence:
 +
 	addq.w	#2,d0
 +
+	cmpi.w	#3,(Player_mode).w	; is this a Knuckles game?
+	blt.s	.notKnuckles		; if not, branch
+	addq.w	#6,d0			; use Knuckles routines instead
+.notKnuckles:
 	move.w	d0,(Ending_Routine).w
 	bsr.w	EndingSequence_LoadCharacterArt
 	bsr.w	EndingSequence_LoadFlickyArt
@@ -13586,18 +13602,14 @@ ObjCA_State5_States:	offsetTable
 	offsetTableEntry.w loc_A2E0	; 0
 	offsetTableEntry.w loc_A2EE	; 2
 	offsetTableEntry.w loc_A2F2	; 4
+	offsetTableEntry.w loc_A2E0_K	; 6
+	offsetTableEntry.w loc_A2E0_K	; 8 (duplicate)
 ; ===========================================================================
 
 loc_A2E0:
 	moveq	#8,d0
 -
-	cmpi.w	#3,(Player_mode).w	;knuckles/knux and tails?
-	bge.s	.knux			;if yes, load knuckles "object"
 	move.b	#ObjID_Sonic,id(a1) ; load Sonic object
-	bra.s	.charpicked
-.knux:
-	move.b	#ObjID_Knuckles,id(a1) ; load Knuckles object (id only, branches to sonic's code)
-.charpicked:
 	move.b	#$81,obj_control(a1)
 	rts
 ; ===========================================================================
@@ -13615,6 +13627,13 @@ loc_A2F2:
 	move.w	a1,(Tails_Tails_Cutscene+parent).w
 	rts
 ; ===========================================================================
+; load Knuckles object
+loc_A2E0_K:
+	;moveq	#$10,d0			; index used by palette changer object
+	moveq	#$E,d0			; super palettes not here
+	move.b	#ObjID_Knuckles,id(a1)	; load Knuckles object
+	move.b	#$81,obj_control(a1)
+	rts
 
 loc_A30A:
 	subq.w	#1,objoff_3C(a0)
@@ -13811,6 +13830,8 @@ off_A534:	offsetTable
 		offsetTableEntry.w loc_A53A	; 0
 		offsetTableEntry.w loc_A55C	; 2
 		offsetTableEntry.w loc_A582	; 4
+		offsetTableEntry.w loc_A53A	; 6
+		offsetTableEntry.w loc_A53A	; 8
 ; ===========================================================================
 
 loc_A53A:
@@ -13819,7 +13840,7 @@ loc_A53A:
 -
 	move.w	d0,y_pos(a1)
 	move.w	x_pos(a0),x_pos(a1)
-	move.l	#(1<<24)|(0<<16)|(AniIDSonAni_Wait<<8)|(AniIDSonAni_Wait<<0),mapping_frame(a1)
+	move.w	#AniIDSonAni_Wait<<8,anim(a1)	; set and force standing animation
 	move.w	#$100,anim_frame_duration(a1)
 	rts
 ; ===========================================================================
@@ -13874,7 +13895,8 @@ loc_A5A6:
 	move.b	(a1,d0.w),mapping_frame(a0)
 	add.w	d0,d0
 	add.w	d0,d0
-	move.l	word_A656(pc,d0.w),d1
+	lea	(word_A656).l,a1
+	move.l	(a1,d0.w),d1
 	move.w	d1,y_pos(a0)
 	swap	d1
 	move.w	d1,x_pos(a0)
@@ -13892,6 +13914,9 @@ off_A5FC:	offsetTable
 		offsetTableEntry.w byte_A602	; 0
 		offsetTableEntry.w byte_A61E	; 2
 		offsetTableEntry.w byte_A63A	; 4
+		offsetTableEntry.w byte_A602_K	; 6
+		offsetTableEntry.w byte_A602_K	; 8
+
 byte_A602:
 	dc.b   7,  7,  7,  7,  8,  8,  8,  8,  8,  8,  8,  9,  9,  9, $A, $A
 	dc.b  $A, $B, $B, $B, $B, $B, $B, $B, $B, $B, $B, $B; 16
@@ -13901,6 +13926,11 @@ byte_A61E:
 byte_A63A:
 	dc.b $18,$18,$18,$18,$19,$19,$19,$19,$19,$19,$19,  9,  9,  9, $A, $A
 	dc.b  $A, $B, $B, $B, $B, $B, $B, $B, $B, $B, $B, $B; 16
+
+byte_A602_K:
+	dc.b  $1A, $1A, $1A, $1A, $1B, $1B, $1B, $1B, $1B, $1B, $1B, $1C, $1C, $1C, $1D, $1D
+	dc.b  $1D, $1E, $1E, $1E, $1E, $1E, $1E, $1E, $1E, $1E, $1E, $1E; 16
+
 	even
 word_A656:
 	dc.w   $A0,  $70,  $B0,  $70,  $B6,  $71,  $BC,  $72
@@ -14088,6 +14118,9 @@ ObjCE_Init:
 	move.w	#make_art_tile(ArtTile_ArtKos_LevelArt,0,1),art_tile(a0)
 	move.b	#1,priority(a0)
 	jsr	(Adjust2PArtPointer).l
+	move.b	#$1F,mapping_frame(a0)	; load Knuckles' sprite
+	cmpi.w	#3,(Player_mode).w	; is this a Knuckles game?
+	bge.s	+			; if yes, use his sprites
 	move.b	#$C,mapping_frame(a0)
 	cmpi.w	#4,(Ending_Routine).w
 	bne.s	+
@@ -14432,6 +14465,8 @@ EndingSequence_LoadCharacterArt_Characters: offsetTable
 	offsetTableEntry.w EndingSequence_LoadCharacterArt_Sonic	; 0
 	offsetTableEntry.w EndingSequence_LoadCharacterArt_SuperSonic	; 2
 	offsetTableEntry.w EndingSequence_LoadCharacterArt_Tails	; 4
+	offsetTableEntry.w EndingSequence_LoadCharacterArt_Knuckles	; 6
+	offsetTableEntry.w EndingSequence_LoadCharacterArt_Knuckles	; 8 (duplicate)
 ; ===========================================================================
 ; loc_ABF4:
 EndingSequence_LoadCharacterArt_Sonic:
@@ -14450,7 +14485,12 @@ EndingSequence_LoadCharacterArt_Tails:
 	move.l	#vdpComm(tiles_to_bytes(ArtTile_EndingCharacter),VRAM,WRITE),(VDP_control_port).l
 	lea	(ArtNem_EndingTails).l,a0
 	jmpto	JmpTo_NemDec
+; ===========================================================================
 
+EndingSequence_LoadCharacterArt_Knuckles:
+	move.l	#vdpComm(tiles_to_bytes(ArtTile_EndingCharacter),VRAM,WRITE),(VDP_control_port).l
+	lea	(ArtNem_EndingKnuckles).l,a0
+	jmpto	JmpTo_NemDec
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 
@@ -14466,6 +14506,8 @@ EndingSequence_LoadFlickyArt_Flickies: offsetTable
 	offsetTableEntry.w EndingSequence_LoadFlickyArt_Flicky	; 0
 	offsetTableEntry.w EndingSequence_LoadFlickyArt_Eagle	; 2
 	offsetTableEntry.w EndingSequence_LoadFlickyArt_Chicken	; 4
+	offsetTableEntry.w EndingSequence_LoadFlickyArt_Flicky	; 6
+	offsetTableEntry.w EndingSequence_LoadFlickyArt_Eagle	; 8
 ; ===========================================================================
 ; loc_AC42:
 EndingSequence_LoadFlickyArt_Flicky:
@@ -27806,6 +27848,9 @@ loc_140CE:
 	dbf	d1,loc_140BC
 
 loc_14102:
+	moveq	#$F,d0			; ==> EOL_Knuckles
+	cmpi.w	#3,(Player_mode).w	; is this a Knuckles game?
+	beq.s	loc_14118		; if yes, use "KNUCKLES GOT" frame
 	moveq	#0,d0
 	cmpi.w	#2,(Player_mode).w
 	bne.s	loc_14118
@@ -27815,7 +27860,6 @@ loc_14102:
 	addq.w	#1,d0
 
 loc_14118:
-
 	move.b	d0,mapping_frame(a0)
 	bsr.w	Obj34_MoveTowardsTargetPosition
 	move.w	x_pixel(a0),d0
@@ -28858,6 +28902,7 @@ MapUnc_EOLTitleCards:	mappingsTable
 	mappingsTableEntry.w	EOL_SonFrame1	; Mini Sonic, frame 1
 	mappingsTableEntry.w	EOL_SonFrame2	; Mini Sonic, frame 2
 	mappingsTableEntry.w	EOL_Perfect	; Perfect text
+	mappingsTableEntry.w	EOL_Knuckles	; "KNUCKLES GOT" text
 
 ; word_14CDA:
 EOL_Sonic:	spriteHeader	; SONIC GOT
@@ -28969,6 +29014,20 @@ EOL_Perfect:	spriteHeader	; Perfect text
 	spritePiece	$58, 0, 1, 2, $6F0, 0, 0, 0, 1
 EOL_Perfect_End
 
+EOL_Knuckles:	spriteHeader	; KNUCKLES GOT
+	 spritePiece	-$5C, 0, 2, 2, ArtTile_ArtNem_ResultsK, 0, 0, 0, 1	; K
+	 spritePiece	-$4C, 0, 2, 2, $584, 0, 0, 0, 1	; N
+	 spritePiece	-$3C, 0, 2, 2, $5D8, 0, 0, 0, 1	; U
+	 spritePiece	-$2C, 0, 2, 2, $5B4, 0, 0, 0, 1	; C
+	 spritePiece	-$1C, 0, 2, 2, ArtTile_ArtNem_ResultsK, 0, 0, 0, 1	; K
+	 spritePiece	-$C, 0, 2, 2, $5C2, 0, 0, 0, 1	; L
+	 spritePiece	4, 0, 2, 2, $580, 0, 0, 0, 1	; E
+	 spritePiece	$14, 0, 2, 2, $5D0, 0, 0, 0, 1	; S
+	 
+	 spritePiece	$2C, 0, 2, 2, $5B8, 0, 0, 0, 1	; G
+	 spritePiece	$3C, 0, 2, 2, $588, 0, 0, 0, 1	; O
+	 spritePiece	$4C, 0, 2, 2, $5D4, 0, 0, 0, 1	; T
+EOL_Knuckles_End
 	even
 
 ; -------------------------------------------------------------------------------
@@ -34872,10 +34931,13 @@ Load_EndOfAct:
 	bne.s	+
 	move.b	#ObjID_Results,id(a1) ; load obj3A (end of level results screen)
 +
-	moveq	#PLCID_Results,d0
-	cmpi.w	#2,(Player_mode).w
-	bne.s	+
+	moveq	#PLCID_ResultsKnuckles,d0
+	cmpi.w	#3,(Player_mode).w
+	bge.s	+
 	moveq	#PLCID_ResultsTails,d0
+	cmpi.w	#2,(Player_mode).w
+	beq.s	+
+	moveq	#PLCID_Results,d0
 +
 	jsr	(LoadPLC2).l
 	move.b	#1,(Update_Bonus_score).w
@@ -69145,11 +69207,12 @@ Obj09_Init:
 	move.b	#$E,y_radius(a0)
 	move.b	#7,x_radius(a0)
 	move.l	#Obj09_MapUnc_34212,mappings(a0)
-	;cmpi.w	#3,(Player_mode).w		; is this a Knuckles game?
-	;blt.s	.notKnuckles			; if not, branch
-	;move.l	#Obj09_MapUnc_KTE,mappings(a0)	; use his mappings instead
-.notKnuckles:
 	move.w	#make_art_tile(ArtTile_ArtNem_SpecialSonic,1,0),art_tile(a0)
+	cmpi.w	#3,(Player_mode).w		; is this a Knuckles game?
+	blt.s	.notKnuckles			; if not, branch
+	;move.l	#Obj09_MapUnc_KTE,mappings(a0)	; use his mappings instead
+	move.w	#make_art_tile(ArtTile_ArtNem_SpecialSonic,2,0),art_tile(a0)
+.notKnuckles:
 	move.b	#1<<render_flags.level_fg,render_flags(a0)
 	move.b	#3,priority(a0)
 	move.w	#$6E,ss_z_pos(a0)
@@ -89404,6 +89467,9 @@ PLCptr_Tornado:		offsetTableEntry.w PlrList_Tornado		; 63
 PLCptr_Capsule:		offsetTableEntry.w PlrList_Capsule		; 64
 PLCptr_Explosion:	offsetTableEntry.w PlrList_Explosion		; 65
 PLCptr_ResultsTails:	offsetTableEntry.w PlrList_ResultsTails		; 66
+PLCptr_Std2_KTE:	offsetTableEntry.w PlrList_Std2_KTE		; 7
+PLCptr_ResultsKnuckles:	offsetTableEntry.w PlrList_ResultsKnuckles		; 7
+PLCptr_SignpostKnuckles:	offsetTableEntry.w PlrList_SignpostKnuckles		; 39
 
 ; macro for a pattern load request list header
 ; must be on the same line as a label that has a corresponding _End label later
@@ -90047,9 +90113,37 @@ PlrList_ResultsTails: plrlistheader
 	plreq ArtTile_ArtNem_Perfect, ArtNem_Perfect
 PlrList_ResultsTails_End
 
+;---------------------------------------------------------------------------------------
+; PATTERN LOAD REQUEST LIST
+; Tails life counter
+;---------------------------------------------------------------------------------------
+PlrList_Std2_KTE: plrlistheader
+	plreq ArtTile_ArtNem_life_counter, ArtNem_KnucklesLife
+	plreq ArtTile_ArtNem_Checkpoint, ArtNem_Checkpoint
+	plreq ArtTile_ArtNem_Powerups, ArtNem_Powerups
+	plreq ArtTile_ArtNem_Shield, ArtNem_Shield
+	plreq ArtTile_ArtNem_Invincible_stars, ArtNem_Invincible_stars
+PlrList_Std2_KTE_End
 
+;---------------------------------------------------------------------------------------
+; PATTERN LOAD REQUEST LIST
+; Knuckles end of level results screen
+;---------------------------------------------------------------------------------------
+PlrList_ResultsKnuckles: plrlistheader
+	plreq ArtTile_ArtNem_TitleCard, ArtNem_TitleCard
+	plreq ArtTile_ArtNem_ResultsText, ArtNem_ResultsText
+	plreq ArtTile_ArtNem_MiniCharacter, ArtNem_MiniKnuckles
+	plreq ArtTile_ArtNem_Perfect, ArtNem_Perfect
+	plreq ArtTile_ArtNem_ResultsK, ArtNem_ResultsK
+PlrList_ResultsKnuckles_End
 
-
+;---------------------------------------------------------------------------------------
+; PATTERN LOAD REQUEST LIST
+; End of level signpost but Knuckles
+;---------------------------------------------------------------------------------------
+PlrList_SignpostKnuckles: plrlistheader
+	plreq ArtTile_ArtNem_Signpost, ArtNem_Signpost_KTE
+PlrList_SignpostKnuckles_End
 ;---------------------------------------------------------------------------------------
 ; Weird revision-specific duplicates of portions of the PLR lists (unused)
 ;---------------------------------------------------------------------------------------
@@ -90953,6 +91047,25 @@ ArtNem_EndingTails:		BINCLUDE	"art/nemesis/Final image of Tails.nem"
 ArtNem_EndingTitle:		BINCLUDE	"art/nemesis/Sonic the Hedgehog 2 image at end of credits.nem"
 	even
 
+ArtNem_EndingKnuckles:		BINCLUDE	"art/nemesis/Small pictures of Knuckles and final image of Knuckles.nem"
+	even
+;---------------------------------------------------------------------------------------
+; Knuckles the Echidna Assets
+;---------------------------------------------------------------------------------------
+ArtNem_KnucklesLife:		BINCLUDE	"art/nemesis/Knuckles life counter.nem"
+	even
+;ArtNem_Powerups_KTE:		BINCLUDE	"art/nemesis/Monitor and contents - Knuckles.nem"
+;	even
+;ArtNem_Shield_KTE:		BINCLUDE	"art/nemesis/Shield - Knuckles.nem"
+;	even
+;ArtNem_Invincible_stars_KTE:	BINCLUDE	"art/nemesis/Invincibility stars - Knuckles.nem"
+;	even
+ArtNem_Signpost_KTE:		BINCLUDE	"art/nemesis/Signpost - Knuckles.nem"
+	even
+ArtNem_ResultsK:		BINCLUDE	"art/nemesis/End of level results K letter.nem"
+	even
+ArtNem_MiniKnuckles:		BINCLUDE	"art/nemesis/Knuckles continue.nem"
+	even
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; LEVEL ART AND BLOCK MAPPINGS (16x16 and 128x128)
@@ -91993,6 +92106,10 @@ Sound70:	include "sound/sfx/F0 - Oil Slide.asm"
 ; ----------------------------------------------------------------------------
 ; Sprite_3BB7C:
 ObjBB:
+	tst.w	(Debug_placement_mode).w	;stop from use during debug otherwise buggy mappings
+	beq.w	.continue
+	rts
+.continue:
 	moveq	#0,d0
 	move.b	routine(a0),d0
 	move.w	ObjBB_Index(pc,d0.w),d1

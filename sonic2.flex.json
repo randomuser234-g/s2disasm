@@ -33,6 +33,33 @@
                     }
                 },
                 {
+                    "name": "Sonic (ending)",
+                    "palettes": [
+                        {
+                            "path": "art/palettes/SonicAndTails.bin",
+                            "length": 1
+                        }
+                    ],
+                    "format": "Sonic 2.js",
+                    "art": {
+                        "path": "art\\nemesis\\Small pictures of Knuckles and final image of Knuckles.nem",
+                        "compression": "Nemesis",
+                        "offset": "0"
+                    },
+                    "mappings": {
+                        "path": "mappings/sprite/objCF.asm",
+                        "label": ""
+                    },
+                    "dplcs": {
+                        "enabled": false,
+                        "path": "mappings/spriteDPLC/Sonic.asm",
+                        "label": ""
+                    },
+                    "config": {
+                        "mapMacros": true
+                    }
+                },
+                {
                     "name": "Sonic (ARz)",
                     "palettes": [
                         {
@@ -168,25 +195,32 @@
                     }
                 },
                 {
-                    "format": "Sonic 2 Special.js",
+                    "format": "Sonic 2.js",
                     "name": "Sonic (special)",
-                    "palettes": [],
+                    "palettes": [
+                        {
+                            "path": "art\\palettes\\Special Stage Main.bin",
+                            "length": 3
+                        }
+                    ],
                     "art": {
-                        "path": "art/nemesis/Sonic and Tails animation frames in special stage.nem",
+                        "path": "art/nemesis/Knuckles and Tails animation frames in special stage.nem",
                         "compression": "Nemesis",
                         "offset": 0
                     },
                     "mappings": {
-                        "path": "mappings/sprite/obj09.asm",
+                        "path": "mappings/sprite/obj09 test.asm",
                         "label": ""
                     },
                     "dplcs": {
-                        "enabled": true,
-                        "path": "mappings/spriteDPLC/obj09.asm",
+                        "enabled": false,
+                        "path": "mappings/spriteDPLC/obj09 test.asm",
                         "label": ""
                     },
                     "expanded": true,
-                    "config": {}
+                    "config": {
+                        "mapMacros": true
+                    }
                 },
                 {
                     "format": "Sonic 2.js",
@@ -323,7 +357,9 @@
                         "path": "",
                         "label": ""
                     },
-                    "config": {}
+                    "config": {
+                        "mapMacros": true
+                    }
                 },
                 {
                     "name": "Signpost",
@@ -346,6 +382,60 @@
                     "dplcs": {
                         "enabled": false,
                         "path": "",
+                        "label": ""
+                    },
+                    "config": {
+                        "mapMacros": true
+                    }
+                },
+                {
+                    "name": "Signpost Knuckles",
+                    "palettes": [
+                        {
+                            "path": "art/palettes/SonicAndTails.bin",
+                            "length": 1
+                        }
+                    ],
+                    "format": "Sonic 2.js",
+                    "art": {
+                        "path": "art/nemesis/Signpost - Knuckles.nem",
+                        "compression": "Nemesis",
+                        "offset": 0
+                    },
+                    "mappings": {
+                        "path": "mappings/sprite/obj0D_a.asm",
+                        "label": ""
+                    },
+                    "dplcs": {
+                        "enabled": false,
+                        "path": "",
+                        "label": ""
+                    },
+                    "config": {
+                        "mapMacros": true
+                    }
+                },
+                {
+                    "name": "Signpost (2P)",
+                    "palettes": [
+                        {
+                            "path": "art/palettes/SonicAndTails.bin",
+                            "length": 1
+                        }
+                    ],
+                    "format": "Sonic 2.js",
+                    "art": {
+                        "path": "art/uncompressed/Signpost.bin",
+                        "compression": "Uncompressed",
+                        "offset": 0
+                    },
+                    "mappings": {
+                        "path": "mappings/sprite/obj0D_B.asm",
+                        "label": ""
+                    },
+                    "dplcs": {
+                        "enabled": true,
+                        "path": "mappings\\spriteDPLC\\obj0D.asm",
                         "label": ""
                     },
                     "config": {
@@ -380,6 +470,33 @@
                     }
                 },
                 {
+                    "name": "Title card",
+                    "palettes": [
+                        {
+                            "path": "art/palettes/SonicAndTails.bin",
+                            "length": 1
+                        }
+                    ],
+                    "format": "Sonic 2.js",
+                    "art": {
+                        "path": "art/nemesis/Title card.nem",
+                        "compression": "Nemesis",
+                        "offset": 0
+                    },
+                    "mappings": {
+                        "path": "mappings/sprite/Sonic.asm",
+                        "label": ""
+                    },
+                    "dplcs": {
+                        "enabled": false,
+                        "path": "mappings/spriteDPLC/Sonic.asm",
+                        "label": ""
+                    },
+                    "config": {
+                        "mapMacros": true
+                    }
+                },
+                {
                     "name": "Invisible Lava Marker",
                     "format": "Sonic 2.js",
                     "palettes": [
@@ -402,7 +519,9 @@
                         "path": "",
                         "label": ""
                     },
-                    "config": {}
+                    "config": {
+                        "mapMacros": true
+                    }
                 },
                 {
                     "name": "Spikes",
@@ -454,7 +573,9 @@
                         "path": "",
                         "label": ""
                     },
-                    "config": {}
+                    "config": {
+                        "mapMacros": true
+                    }
                 },
                 {
                     "name": "Spring",
@@ -504,7 +625,9 @@
                         "path": "",
                         "label": ""
                     },
-                    "config": {}
+                    "config": {
+                        "mapMacros": true
+                    }
                 },
                 {
                     "name": "Star Post",
@@ -522,6 +645,114 @@
                     },
                     "mappings": {
                         "path": "mappings/sprite/obj79_a.asm",
+                        "label": ""
+                    },
+                    "dplcs": {
+                        "enabled": false,
+                        "path": "",
+                        "label": ""
+                    },
+                    "config": {
+                        "mapMacros": true
+                    }
+                },
+                {
+                    "name": "Knux life count",
+                    "palettes": [
+                        {
+                            "path": "art/palettes/SonicAndTails.bin",
+                            "length": 1
+                        }
+                    ],
+                    "format": "Sonic 2.js",
+                    "art": {
+                        "path": "art\\nemesis\\Knuckles life counter.nem",
+                        "compression": "Nemesis",
+                        "offset": 0
+                    },
+                    "mappings": {
+                        "path": "mappings/sprite/obj79_a.asm",
+                        "label": ""
+                    },
+                    "dplcs": {
+                        "enabled": false,
+                        "path": "",
+                        "label": ""
+                    },
+                    "config": {
+                        "mapMacros": true
+                    }
+                },
+                {
+                    "name": "Knux continue",
+                    "palettes": [
+                        {
+                            "path": "art/palettes/SonicAndTails.bin",
+                            "length": 1
+                        }
+                    ],
+                    "format": "Sonic 2.js",
+                    "art": {
+                        "path": "art\\nemesis\\Knuckles continue.nem",
+                        "compression": "Nemesis",
+                        "offset": 0
+                    },
+                    "mappings": {
+                        "path": "mappings/sprite/objDA.asm",
+                        "label": ""
+                    },
+                    "dplcs": {
+                        "enabled": false,
+                        "path": "",
+                        "label": ""
+                    },
+                    "config": {
+                        "mapMacros": true
+                    }
+                },
+                {
+                    "name": "Knux SS text",
+                    "palettes": [
+                        {
+                            "path": "art/palettes/Special Stage Main.bin",
+                            "length": 3
+                        }
+                    ],
+                    "format": "Sonic 2.js",
+                    "art": {
+                        "path": "art\\nemesis\\Knuckles text patterns from special stage.nem",
+                        "compression": "Nemesis",
+                        "offset": 0
+                    },
+                    "mappings": {
+                        "path": "mappings/sprite/objDA.asm",
+                        "label": ""
+                    },
+                    "dplcs": {
+                        "enabled": false,
+                        "path": "",
+                        "label": ""
+                    },
+                    "config": {
+                        "mapMacros": true
+                    }
+                },
+                {
+                    "name": "obj6f special stage result",
+                    "palettes": [
+                        {
+                            "path": "art/palettes/SonicAndTails.bin",
+                            "length": 1
+                        }
+                    ],
+                    "format": "Sonic 2.js",
+                    "art": {
+                        "path": "art\\nemesis\\Font using large broken letters.nem",
+                        "compression": "Nemesis",
+                        "offset": 0
+                    },
+                    "mappings": {
+                        "path": "mappings\\sprite\\obj6F.asm",
                         "label": ""
                     },
                     "dplcs": {
@@ -1396,7 +1627,9 @@
                         "path": "",
                         "label": ""
                     },
-                    "config": {}
+                    "config": {
+                        "mapMacros": true
+                    }
                 },
                 {
                     "name": "Pinball Mode",
@@ -1425,7 +1658,9 @@
                         "path": "",
                         "label": ""
                     },
-                    "config": {}
+                    "config": {
+                        "mapMacros": true
+                    }
                 },
                 {
                     "name": "Pressure Spring",
@@ -1454,7 +1689,9 @@
                         "path": "",
                         "label": ""
                     },
-                    "config": {}
+                    "config": {
+                        "mapMacros": true
+                    }
                 },
                 {
                     "name": "Flipper",
@@ -1512,7 +1749,9 @@
                         "path": "",
                         "label": ""
                     },
-                    "config": {}
+                    "config": {
+                        "mapMacros": true
+                    }
                 },
                 {
                     "name": "Flashing Blocks",
@@ -1599,7 +1838,9 @@
                         "path": "",
                         "label": ""
                     },
-                    "config": {}
+                    "config": {
+                        "mapMacros": true
+                    }
                 },
                 {
                     "name": "Cage",
@@ -1657,7 +1898,9 @@
                         "path": "",
                         "label": ""
                     },
-                    "config": {}
+                    "config": {
+                        "mapMacros": true
+                    }
                 },
                 {
                     "name": "Colored Point Block",
@@ -1686,11 +1929,44 @@
                         "path": "",
                         "label": ""
                     },
-                    "config": {}
+                    "config": {
+                        "mapMacros": true
+                    }
+                },
+                {
+                    "name": "Slot machine panels",
+                    "palettes": [
+                        {
+                            "path": "art/palettes/SonicAndTails.bin",
+                            "length": 1
+                        },
+                        {
+                            "path": "art/palettes/CNZ.bin",
+                            "length": 3
+                        }
+                    ],
+                    "format": "Sonic 2.js",
+                    "art": {
+                        "path": "art/uncompressed/Slot pictures.bin",
+                        "compression": "Uncompressed",
+                        "offset": 0
+                    },
+                    "mappings": {
+                        "path": "mappings/sprite/objD8.asm",
+                        "label": ""
+                    },
+                    "dplcs": {
+                        "enabled": false,
+                        "path": "",
+                        "label": ""
+                    },
+                    "config": {
+                        "mapMacros": true
+                    }
                 }
             ],
             "isDirectory": true,
-            "expanded": false,
+            "expanded": true,
             "config": {}
         },
         {
