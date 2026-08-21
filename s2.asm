@@ -3122,6 +3122,8 @@ CyclingPal_WFZ2:
 
 ; sub_213E:
 PalCycle_SuperSonic:
+	cmpi.w	#1,(Player_option).w	;sonic and tails/sonic alone?
+	bgt.s	.return			;skip if not
 	move.b	(Super_Sonic_palette).w,d0
 	beq.s	.return	; return, if Sonic isn't super
 	bmi.w	.normal	; branch, if fade-in is done
@@ -6691,11 +6693,14 @@ SpecialStage:
 	move.l	#0,(Camera_Y_pos).w
 	move.l	#0,(Camera_X_pos_copy).w
 	move.l	#0,(Camera_Y_pos_copy).w
-	cmpi.w	#1,(Player_mode).w	; is this a Tails alone game?
-	bgt.s	+			; if yes, branch
+	cmpi.w	#2,(Player_mode).w	; is this a Tails alone game?
+	beq.s	+			; if yes, branch
 	move.b	#ObjID_SonicSS,(MainCharacter+id).w ; load Obj09 (special stage Sonic)
 	tst.w	(Player_mode).w		; is this a Sonic and Tails game?
-	bne.s	++			; if not, branch
+	beq.s	+			; if yes, branch
+	cmpi.w	#3,(Player_mode).w		; is this a Knuckles and Tails game?
+	beq.s	+			; if yes, branch
+	bra.s	++			;otherwise skip tails
 +	move.b	#ObjID_TailsSS,(Sidekick+id).w ; load Obj10 (special stage Tails)
 +	move.b	#ObjID_SSHUD,(SpecialStageHUD+id).w ; load Obj5E (special stage HUD)
 	move.b	#ObjID_StartBanner,(SpecialStageStartBanner+id).w ; load Obj5F (special stage banner)
@@ -6839,7 +6844,9 @@ SpecialStage:
 	bsr.w	NemDec
 	move.w	(Player_mode).w,d0
 	beq.s	++
-	subq.w	#1,d0
+	cmpi.w	#3,d0
+	beq.s	++
+	cmpi.w	#2,d0
 	beq.s	+
 	clr.w	(Ring_count).w
 	bra.s	++
@@ -9262,6 +9269,10 @@ SSPlaneB_Background:
 ;sub_6DD4
 SSDecompressPlayerArt:
 	lea	(ArtNem_SpecialSonicAndTails).l,a0
+	cmpi.w	#3,(Player_mode).w		; is this a Knuckles game?
+	blt.s	.notKnuckles			; if not, branch
+	lea	(ArtNem_SpecialKnuckles).l,a0	; use his art instead
+.notKnuckles:
 	lea	(SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF).l,a4
 	bra.w	NemDecToRAM
 ; End of function SSDecompressPlayerArt
@@ -9872,6 +9883,8 @@ Obj87_Init:
 	bne.s	+++
 	cmpi.w	#0,(Player_mode).w
 	beq.s	+
+	cmpi.w	#3,(Player_mode).w
+	beq.s	+
 	subi_.b	#1,mainspr_childsprites(a0)
 	move.w	#$94,sub2_x_pos-subspr_data(a1)	; sub2_x_pos
 	rts
@@ -9946,12 +9959,16 @@ loc_7480:
 	move.w	#$48,d1
 	tst.w	(Player_mode).w
 	beq.s	+
+	cmpi.w	#3,(Player_mode).w
+	beq.s	+
 	addi.w	#$54,d1
 /	move.w	d1,(a1,d5.w)
 	addi_.w	#8,d1
 	addq.w	#next_subspr,d5
 	dbf	d4,-
 	cmpi.w	#1,(Player_mode).w
+	beq.s	loc_7536
+	cmpi.w	#4,(Player_mode).w
 	beq.s	loc_7536
 
 loc_74EA:
@@ -9977,6 +9994,8 @@ loc_74EA:
 	subq.w	#1,d4
 	move.w	#$E0,d1
 	tst.w	(Player_mode).w
+	beq.s	+
+	cmpi.w	#3,(Player_mode).w
 	beq.s	+
 	subi.w	#$44,d1
 /	move.w	d1,(a1,d5.w)
@@ -10206,8 +10225,12 @@ SSStartNewAct:
 	add.w	d0,d0
 	add.w	d0,d0
 	add.w	d1,d0
-	tst.w	(Player_mode).w
-	bne.s	+
+	tst.w	(Player_mode).w	;sonic and tails?
+	beq.s	+
+	cmpi.w	#3,(Player_mode).w	;knuckles and tails?
+	beq.s	+
+	bra.s	++		;if none, assume alone
++
 	move.b	SpecialStage_RingReq_Team(pc,d0.w),d1
 	bra.s	++
 ; ===========================================================================
@@ -12493,7 +12516,7 @@ MenuScreen_LevelSelect:
 
 	; Draw sound test number
 	moveq	#palette_line_0,d3
-	bsr.w	LevelSelect_DrawSoundNumber
+	bsr.w	LevelSelect_DrawNumber
 
 	; Load zone icon
 	lea	(Chunk_Table+planeLoc(40,0,28)).l,a1
@@ -12743,6 +12766,13 @@ LevSelControls_CheckLR:
 ; loc_958A:
 LevSelControls_SwitchSide:	; not in soundtest, not up/down pressed
 	move.b	(Ctrl_1_Press).w,d1
+	btst	#button_C,d1		; is C pressed?
+	beq.s	+			; if not, branch
+	addq.w	#1,(Player_option).w	; increase player option
+	cmpi.w	#4,(Player_option).w	;higher than 4
+	ble.s	+			;skip if not
+	move.w	#0,(Player_option).w	;cap at 04
++
 	andi.b	#button_left_mask|button_right_mask,d1
 	beq.s	+				; no direction key pressed
 	move.w	(Level_select_zone).w,d0	; left or right pressed
@@ -12835,16 +12865,17 @@ LevelSelect_MarkFields:
 	move.w	d0,(a6)
 
 +
-	cmpi.w	#$15,(Level_select_zone).w
-	bne.s	+	; rts
-	bsr.w	LevelSelect_DrawSoundNumber
-+
-	rts
-; ===========================================================================
+	move.l	#vdpComm(VRAM_Plane_A_Name_Table+planeLoc(64,34,20),VRAM,WRITE),(VDP_control_port).l
+	move.w	(Player_option).w,d0
+	cmpi.w	#$15,(Level_select_zone).w	; is this the sound test entry?
+	bne.s	LevelSelect_DrawNumber	; rts
+	
 ;loc_965A:
 LevelSelect_DrawSoundNumber:
 	move.l	#vdpComm(VRAM_Plane_A_Name_Table+planeLoc(64,34,18),VRAM,WRITE),(VDP_control_port).l
 	move.w	(Sound_test_sound).w,d0
+	
+LevelSelect_DrawNumber:
 	move.b	d0,d2
 	lsr.b	#4,d0
 	bsr.s	+
@@ -37360,10 +37391,13 @@ Sonic_CheckGoSuper:
 	move.b	#$13,y_radius(a0)
 	move.b	#9,x_radius(a0)
     endif
+	cmpi.w	#1,(Player_option).w	;sonic and tails/sonic alone?
+	bgt.s	.nopalette			;skip if not
 	move.b	#1,(Super_Sonic_palette).w
 	move.b	#$F,(Palette_timer).w
-	move.b	#1,(Super_Sonic_flag).w
 	move.b	#$81,obj_control(a0)
+.nopalette:
+	move.b	#1,(Super_Sonic_flag).w
 	move.b	#AniIDSupSonAni_Transform,anim(a0)			; use transformation animation
 	move.b	#ObjID_SuperSonicStars,(SuperSonicStars+id).w ; load Obj7E (Super Sonic stars object) at $FFFFD040
 	move.w	#$A00,(Sonic_top_speed).w
@@ -37413,8 +37447,11 @@ Sonic_Super:
 	bne.s	return_1AC3C
 ; loc_1ABF2:
 Sonic_RevertToNormal:
+	cmpi.w	#1,(Player_option).w	;sonic and tails/sonic alone?
+	bgt.s	.nopalette			;skip if not
 	move.b	#2,(Super_Sonic_palette).w	; Remove rotating palette
 	move.w	#$28,(Palette_frame).w
+.nopalette:
 	move.b	#0,(Super_Sonic_flag).w
 	move.b	#AniIDSonAni_Run,prev_anim(a0)	; Force Sonic's animation to restart
 	move.w	#1,invincibility_time(a0)	; Remove invincibility
@@ -69072,6 +69109,10 @@ Obj09_Init:
 	move.b	#$E,y_radius(a0)
 	move.b	#7,x_radius(a0)
 	move.l	#Obj09_MapUnc_34212,mappings(a0)
+	;cmpi.w	#3,(Player_mode).w		; is this a Knuckles game?
+	;blt.s	.notKnuckles			; if not, branch
+	;move.l	#Obj09_MapUnc_KTE,mappings(a0)	; use his mappings instead
+.notKnuckles:
 	move.w	#make_art_tile(ArtTile_ArtNem_SpecialSonic,1,0),art_tile(a0)
 	move.b	#1<<render_flags.level_fg,render_flags(a0)
 	move.b	#3,priority(a0)
@@ -69170,11 +69211,11 @@ byte_33A92:
 	dc.b   0,  FALSE<<render_flags.x_flip| TRUE<<render_flags.y_flip	; 10
 	dc.b   4,   TRUE<<render_flags.x_flip| TRUE<<render_flags.y_flip	; 12
 	dc.b  $C,   TRUE<<render_flags.x_flip|FALSE<<render_flags.y_flip	; 14
-dword_33AA2:
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($000)		; Sonic in upright position, $58 tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($058)		; Sonic in diagonal position, $CC tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($124)		; Sonic in horizontal position, $4D tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($171)		; Sonic in ball form, $12 tiles
+;dword_33AA2:
+	;dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($000)		; Sonic in upright position, $58 tiles
+	;dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($058)		; Sonic in diagonal position, $CC tiles
+	;dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($124)		; Sonic in horizontal position, $4D tiles
+	;dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($171)		; Sonic in ball form, $12 tiles
 ; ===========================================================================
 
 LoadSSSonicDynPLC:
@@ -69188,7 +69229,12 @@ LoadSSSonicDynPLC:
 ; ===========================================================================
 +
 	jsrto	JmpTo42_DisplaySprite
-	lea	dword_33AA2(pc),a3
+	move.l	#$FF0000,d6
+	lea	(Obj09_MapRUnc).l,a2
+	;cmpi.w	#3,(Player_mode).w		; is this a Knuckles game?
+	;blt.s	.notKnuckles			; if not, branch
+	;lea	(Obj09_MapRUnc_KTE).l,a2	; use his DPLCs instead
+.notKnuckles:
 	lea	(Sonic_LastLoadedDPLC).w,a4
 	move.w	#tiles_to_bytes(ArtTile_ArtNem_SpecialSonic),d4
 	moveq	#0,d1
@@ -69199,28 +69245,12 @@ LoadSSPlayerDynPLC:
 	cmp.b	(a4),d0
 	beq.s	return_33B3E
 	move.b	d0,(a4)
-	moveq	#0,d6
-	cmpi.b	#4,d0
-	blt.s	loc_33AFE
-	addq.w	#4,d6
-	cmpi.b	#$C,d0
-	blt.s	loc_33AFE
-	addq.w	#4,d6
-	cmpi.b	#$10,d0
-	blt.s	loc_33AFE
-	addq.b	#4,d6
-
-loc_33AFE:
-	move.l	(a3,d6.w),d6
-	add.w	d1,d0
 	add.w	d0,d0
-	lea	(Obj09_MapRUnc_345FA).l,a2
 	adda.w	(a2,d0.w),a2
 	move.w	(a2)+,d5
 	subq.w	#1,d5
 	bmi.s	return_33B3E
-
-SSPLC_ReadEntry:
+-
 	moveq	#0,d1
 	move.w	(a2)+,d1
 	move.w	d1,d3
@@ -69228,13 +69258,13 @@ SSPLC_ReadEntry:
 	andi.w	#$F0,d3
 	addi.w	#$10,d3
 	andi.w	#$FFF,d1
-	lsl.w	#1,d1
+	lsl.w	#5,d1
 	add.l	d6,d1
 	move.w	d4,d2
 	add.w	d3,d4
 	add.w	d3,d4
 	jsr	(QueueDMATransfer).l
-	dbf	d5,SSPLC_ReadEntry
+	dbf	d5,-
 
 return_33B3E:
 	rts
@@ -69907,6 +69937,20 @@ byte_34208:
 ; sprite mappings - uses ArtNem_SpecialSonicAndTails
 ; ----------------------------------------------------------------------------
 Obj09_MapUnc_34212:	include "mappings/sprite/obj09.asm"
+		even
+Obj09_MapUnc_KTE:	include "mappings/sprite/obj09_k.asm"
+		even
+; ----------------------------------------------------------------------------
+; sprite dplc - uses ArtNem_SpecialSonicAndTails
+; ----------------------------------------------------------------------------
+Obj09_MapRUnc:	binclude "mappings/spriteDPLC/obj09.bin"
+		even
+Obj10_MapRUnc:	binclude "mappings/spriteDPLC/obj10.bin"
+		even
+Obj88_MapRUnc:	binclude "mappings/spriteDPLC/obj88.bin"
+		even
+Obj09_MapRUnc_KTE:	include	"mappings/spriteDPLC/obj09_k.asm"
+	even
 ; ----------------------------------------------------------------------------
 ; sprite mappings for special stage shadows
 ; ----------------------------------------------------------------------------
@@ -70354,8 +70398,10 @@ Obj10_Init:
 	move.b	#1<<render_flags.level_fg,render_flags(a0)
 	move.b	#2,priority(a0)
 	move.w	#$80,ss_z_pos(a0)
-	tst.w	(Player_mode).w
-	beq.s	loc_34864
+	tst.w	(Player_mode).w	;sonic and tails game?
+	beq.s	loc_34864	;if yes, branch
+	cmpi.w	#3,(Player_mode).w	;knuckles and tails game?
+	beq.s	loc_34864		;if yes, branch
 	move.b	#3,priority(a0)
 	move.w	#$6E,ss_z_pos(a0)
 
@@ -70400,6 +70446,8 @@ Obj10_MdNormal:
 	lea	(Ctrl_2_Held_Logical).w,a2
 	tst.w	(Player_mode).w
 	beq.s	+
+	cmpi.w	#3,(Player_mode).w
+	beq.s	+
 	lea	(Ctrl_1_Held_Logical).w,a2
 +
 	bsr.w	SSPlayer_Move
@@ -70410,6 +70458,8 @@ Obj10_MdNormal:
 	bsr.w	SSAnglePos
 	lea	(Ctrl_2_Press_Logical).w,a2
 	tst.w	(Player_mode).w
+	beq.s	+
+	cmpi.w	#3,(Player_mode).w
 	beq.s	+
 	lea	(Ctrl_1_Press_Logical).w,a2
 +
@@ -70433,6 +70483,8 @@ SSTailsCPU_Control:
 	tst.b	(SS_2p_Flag).w
 	bne.s	+
 	tst.w	(Player_mode).w
+	beq.s	++
+	cmpi.w	#3,(Player_mode).w
 	beq.s	++
 +
 	rts
@@ -70469,11 +70521,11 @@ SSTailsCPU_Control:
 	move.w	(a1),(Ctrl_2_Logical).w
 	rts
 ; ===========================================================================
-dword_349B8:
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($183)		; Tails in upright position, $3D tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($1C0)		; Tails in diagonal position, $A4 tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($264)		; Tails in horizontal position, $3A tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($29E)		; Tails in ball form, $10 tiles
+;dword_349B8:
+	;dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($183)		; Tails in upright position, $3D tiles
+	;dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($1C0)		; Tails in diagonal position, $A4 tiles
+	;dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($264)		; Tails in horizontal position, $3A tiles
+	;dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($29E)		; Tails in ball form, $10 tiles
 ; ===========================================================================
 
 LoadSSTailsDynPLC:
@@ -70487,16 +70539,19 @@ LoadSSTailsDynPLC:
 ; ===========================================================================
 +
 	jsrto	JmpTo43_DisplaySprite
-	lea	dword_349B8(pc),a3
+	move.l	#$FF0000,d6
+	lea	(Obj10_MapRUnc).l,a2
 	lea	(Tails_LastLoadedDPLC).w,a4
 	move.w	#tiles_to_bytes(ArtTile_ArtNem_SpecialTails),d4
-	moveq	#$12,d1
+	moveq	#0,d1
 	bra.w	LoadSSPlayerDynPLC
 ; ===========================================================================
 
 Obj10_MdJump:
 	lea	(Ctrl_2_Held_Logical).w,a2
 	tst.w	(Player_mode).w
+	beq.s	+
+	cmpi.w	#3,(Player_mode).w
 	beq.s	+
 	lea	(Ctrl_1_Held_Logical).w,a2
 +
@@ -70514,6 +70569,8 @@ Obj10_MdJump:
 Obj10_MdAir:
 	lea	(Ctrl_2_Held_Logical).w,a2
 	tst.w	(Player_mode).w
+	beq.s	+
+	cmpi.w	#3,(Player_mode).w
 	beq.s	+
 	lea	(Ctrl_1_Held_Logical).w,a2
 +
@@ -70552,10 +70609,10 @@ Obj88:
 return_34A9E:
 	rts
 ; ===========================================================================
-dword_34AA0:
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($2AE)		; Tails' tails when he is in upright position, $35 tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($2E3)		; Tails' tails when he is in diagonal position, $3B tiles
-	dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($31E)		; Tails' tails when he is in horizontal position, $35 tiles
+;dword_34AA0:
+	;dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($2AE)		; Tails' tails when he is in upright position, $35 tiles
+	;dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($2E3)		; Tails' tails when he is in diagonal position, $3B tiles
+	;dc.l   (SSRAM_ArtNem_SpecialSonicAndTails & $FFFFFF) + tiles_to_bytes($31E)		; Tails' tails when he is in horizontal position, $35 tiles
 ; ===========================================================================
 
 LoadSSTailsTailsDynPLC:
@@ -70568,37 +70625,12 @@ LoadSSTailsTailsDynPLC:
 ; ===========================================================================
 +
 	jsrto	JmpTo43_DisplaySprite
-	moveq	#0,d0
-	move.b	mapping_frame(a0),d0
-	cmp.b	(TailsTails_LastLoadedDPLC).w,d0
-	beq.s	return_34B1A
-	move.b	d0,(TailsTails_LastLoadedDPLC).w
-	moveq	#0,d6
-	cmpi.b	#7,d0
-	blt.s	loc_34AE4
-	addq.w	#4,d6
-	cmpi.b	#$E,d0
-	blt.s	loc_34AE4
-	addq.w	#4,d6
-
-loc_34AE4:
-	move.l	dword_34AA0(pc,d6.w),d6
-	addi.w	#$24,d0
-	add.w	d0,d0
-	lea	(Obj09_MapRUnc_345FA).l,a2
-	adda.w	(a2,d0.w),a2
-	move.w	#tiles_to_bytes(ArtTile_ArtNem_SpecialTails_Tails),d2
+	move.l	#$FF0000,d6
+	lea	(Obj88_MapRUnc).l,a2
+	lea	(TailsTails_LastLoadedDPLC).w,a4
+	move.w	#tiles_to_bytes(ArtTile_ArtNem_SpecialTails_Tails),d4
 	moveq	#0,d1
-	move.w	(a2)+,d1
-	move.w	d1,d3
-	lsr.w	#8,d3
-	andi.w	#$F0,d3
-	addi.w	#$10,d3
-	andi.w	#$FFF,d1
-	lsl.w	#1,d1
-	add.l	d6,d1
-	jsr	(QueueDMATransfer).l
-
+	bra.w	LoadSSPlayerDynPLC
 return_34B1A:
 	rts
 ; ===========================================================================
@@ -71562,10 +71594,15 @@ Obj5A_RingsNeeded:
 	rts
 ; ===========================================================================
 +
-	move.w	(Ring_count).w,d0
-	cmpi.w	#1,(Player_mode).w
-	blt.s	+
+	move.w	(Ring_count).w,d0	
+	cmpi.w	#2,(Player_mode).w	;tails alone?
+	beq.s	+
+	tst.w	(Player_mode).w		;sonic and tails?
 	beq.s	++
+	cmpi.w	#3,(Player_mode).w	;knuckles and tails?
+	beq.s	++
+	bra.s	+++
++
 	move.w	(Ring_count_2P).w,d0
 	bra.s	++
 ; ===========================================================================
@@ -72177,8 +72214,8 @@ Obj5A_CreateRingReqMessage:
 Obj5A_PrintCheckpointMessage:
 	move.w	#$80,d3				; x
 	bsr.w	Obj5A_CreateCheckpointWingedHand
-	cmpi.w	#1,(Player_mode).w
-	ble.s	loc_35D6E
+	cmpi.w	#2,(Player_mode).w
+	bne.s	loc_35D6E
 	addi.w	#palette_line_1,art_tile(a1)
 	addi.w	#palette_line_1,art_tile(a2)
 
@@ -91099,6 +91136,10 @@ ArtNem_SpecialMessages:		BINCLUDE	"art/nemesis/Special stage messages and icons.
 ArtNem_SpecialSonicAndTails:	BINCLUDE	"art/nemesis/Sonic and Tails animation frames in special stage.nem" ; [fixBugs] In this file, Tails' arms are tan instead of orange.
 	even
 ArtNem_SpecialTailsText:	BINCLUDE	"art/nemesis/Tails text patterns from special stage.nem"
+	even
+ArtNem_SpecialKnuckles:		BINCLUDE	"art/nemesis/Knuckles and Tails animation frames in special stage.nem"
+	even
+ArtNem_SpecialKnucklesText:	BINCLUDE	"art/nemesis/Knuckles text patterns from special stage.nem"
 	even
 MiscKoz_SpecialPerspective:	BINCLUDE	"misc/Special stage object perspective data.kos"
 	even
