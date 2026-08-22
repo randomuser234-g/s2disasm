@@ -1,4 +1,4 @@
-DPLC_1f62: mappingsTable
+DPLC_10a1: mappingsTable
 	mappingsTableEntry.w	DPLC_1f9a_0
 	mappingsTableEntry.w	DPLC_1f9a_1
 	mappingsTableEntry.w	DPLC_1f9a_2
@@ -1563,7 +1563,7 @@ DPLC_1f62_214_End
 
 DPLC_1f62_215:	dplcHeader
  dplcEntry $10, $438
- dplcEntry 6, $A75
+ dplcEntry 4, $A75
 DPLC_1f62_215_End
 
 DPLC_1f62_216:	dplcHeader
@@ -1573,7 +1573,7 @@ DPLC_1f62_216_End
 
 DPLC_1f62_217:	dplcHeader
  dplcEntry $10, $438
- dplcEntry 6, $A75
+ dplcEntry 4, $A75
 DPLC_1f62_217_End
 
 DPLC_1f9a_215:	dplcHeader
