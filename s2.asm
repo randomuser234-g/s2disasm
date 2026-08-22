@@ -4267,6 +4267,8 @@ TitleScreen:
 	move.w	#$8720,(a6)		; Background palette/color: 2/0
 
 	clr.b	(Water_fullscreen_flag).w
+	move.b	#$0,(Teleport_timer).w	;stop teleporting if on title screen
+	move.b	#0,(Teleport_flag).w
 
 	move.w	#$8C81,(a6)		; H res 40 cells, no interlace, S/H disabled
 
