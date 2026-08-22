@@ -1,4 +1,4 @@
-Map_081f: mappingsTable
+Map_f310: mappingsTable
 	mappingsTableEntry.w	Map_cd1f_0
 	mappingsTableEntry.w	Map_cd1f_1
 	mappingsTableEntry.w	Map_cd1f_2
@@ -1565,7 +1565,7 @@ Map_081f_214_End
 
 Map_081f_215:	spriteHeader
  spritePiece -$10, -$10, 4, 4, 0, 0, 0, 0, 0
- spritePiece $D, -$E, 2, 3, $10, 0, 0, 0, 0
+ spritePiece $D, -$E, 1, 4, $10, 0, 0, 0, 0
 Map_081f_215_End
 
 Map_081f_216:	spriteHeader
@@ -1575,7 +1575,7 @@ Map_081f_216_End
 
 Map_081f_217:	spriteHeader
  spritePiece -$10, -$10, 4, 4, 0, 0, 0, 0, 0
- spritePiece -$1D, -$A, 2, 3, $10, 1, 1, 0, 0
+ spritePiece -$15, -$12, 1, 4, $10, 1, 1, 0, 0
 Map_081f_217_End
 
 Map_cd1f_215:	spriteHeader
