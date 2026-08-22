@@ -5216,6 +5216,10 @@ InitPlayers:
 	move.b	#ObjID_SpindashDust,(Tails_Dust+id).w ; load Obj08 Tails' spindash dust/splash object at $FFFFD140
 +
     if yourpast
+	tst.w	(Two_player_mode).w	; 2P mode?
+	beq.s	+			; if not, branch
+	rts				;don't spawn
++
 	move.b	#ObjID_CloneSonic,(Sonic_Shield+id).w ; load ObjBB clone Sonic object at shield
     else
 	nop
@@ -26052,6 +26056,8 @@ invincible_monitor:
 ; ---------------------------------------------------------------------------
 ;loc_12AA6:
 teleport_monitor:
+	tst.w	(Two_player_mode).w	;is 2P mode?
+	beq.s	invincible_monitor			;if not, branch
 	addq.w	#1,(a2)
 	cmpi.b	#6,(MainCharacter+routine).w	; is player 1 dead or respawning?
 	bhs.s	+				; if yes, branch
