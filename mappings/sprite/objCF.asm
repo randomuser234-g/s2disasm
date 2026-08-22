@@ -1,4 +1,4 @@
-Map_074c: mappingsTable
+Map_53bf: mappingsTable
 	mappingsTableEntry.w	Map_objCF_0034
 	mappingsTableEntry.w	Map_objCF_006E
 	mappingsTableEntry.w	Map_objCF_0090
@@ -23,16 +23,16 @@ Map_074c: mappingsTable
 	mappingsTableEntry.w	Map_objCF_039E
 	mappingsTableEntry.w	Map_objCF_03A8
 	mappingsTableEntry.w	Map_objCF_03B2
-	mappingsTableEntry.w	Map_9591_24
-	mappingsTableEntry.w	Map_9591_25
 	mappingsTableEntry.w	Map_objCF_042C
-	mappingsTableEntry.w	Map_9591_27
-	mappingsTableEntry.w	Map_9591_28
-	mappingsTableEntry.w	Map_9591_29
-	mappingsTableEntry.w	Map_9591_30
-	mappingsTableEntry.w	Map_9591_31
-	mappingsTableEntry.w	Map_9591_32
-	mappingsTableEntry.w	Map_9591_33
+	mappingsTableEntry.w	Map_objCF_046E
+	mappingsTableEntry.w	Map_53bf_26
+	mappingsTableEntry.w	Map_objCF_27
+	mappingsTableEntry.w	Map_objCF_28
+	mappingsTableEntry.w	Map_objCF_29
+	mappingsTableEntry.w	Map_objCF_30
+	mappingsTableEntry.w	Map_objCF_31
+	mappingsTableEntry.w	Map_objCF_32
+	mappingsTableEntry.w	Map_objCF_33
 
 Map_objCF_0034:	spriteHeader
  spritePiece -$20, -$10, 2, 1, $493, 0, 0, 0, 0
@@ -227,8 +227,8 @@ Map_objCF_03B2:	spriteHeader
  spritePiece $48, $58, 2, 1, $8C, 0, 0, 0, 1
 Map_objCF_03B2_End
 
-Map_9591_24:	spriteHeader
- spritePiece 6, -$20, 2, 3, $19, 0, 0, 0, 0
+Map_objCF_042C:	spriteHeader
+ spritePiece 6, -$20, 2, 3, $19, 0, 0, 1, 0
  spritePiece -$20, -$10, 2, 1, $493, 0, 0, 0, 0
  spritePiece -$20, -8, 3, 2, $4EE, 0, 0, 0, 0
  spritePiece -8, -$10, 2, 2, $4F4, 0, 0, 0, 0
@@ -236,9 +236,17 @@ Map_9591_24:	spriteHeader
  spritePiece 8, -$10, 2, 1, $4A1, 0, 0, 0, 0
  spritePiece 8, -8, 3, 2, $4A3, 0, 0, 0, 0
  spritePiece 8, 8, 1, 1, $4A9, 0, 0, 0, 0
-Map_9591_24_End
+Map_objCF_042C_End
 
-Map_9591_25:	spriteHeader
+Map_objCF_046E:	spriteHeader
+ spritePiece 4, -$19, 1, 2, $1F, 0, 0, 1, 0
+ spritePiece -$18, -$C, 2, 2, $4F8, 0, 0, 0, 0
+ spritePiece -8, -$C, 2, 2, $4FC, 0, 0, 0, 0
+ spritePiece -8, 4, 2, 1, $4B2, 0, 0, 0, 0
+ spritePiece 8, -$C, 2, 3, $4B4, 0, 0, 0, 0
+Map_objCF_046E_End
+
+Map_53bf_26:	spriteHeader
  spritePiece 6, -$20, 2, 3, $19, 0, 0, 0, 0
  spritePiece -$20, -$10, 2, 1, $493, 0, 0, 0, 0
  spritePiece -$20, -8, 3, 2, $495, 0, 0, 0, 0
@@ -247,54 +255,46 @@ Map_9591_25:	spriteHeader
  spritePiece 8, -$10, 2, 1, $4A1, 0, 0, 0, 0
  spritePiece 8, -8, 3, 2, $4A3, 0, 0, 0, 0
  spritePiece 8, 8, 1, 1, $4A9, 0, 0, 0, 0
-Map_9591_25_End
+Map_53bf_26_End
 
-Map_objCF_042C:	spriteHeader
- spritePiece 4, -$19, 1, 2, $1F, 0, 0, 0, 0
- spritePiece -$18, -$C, 2, 2, $4F8, 0, 0, 0, 0
- spritePiece -8, -$C, 2, 2, $4FC, 0, 0, 0, 0
- spritePiece -8, 4, 2, 1, $4B2, 0, 0, 0, 0
- spritePiece 8, -$C, 2, 3, $4B4, 0, 0, 0, 0
-Map_objCF_042C_End
-
-Map_9591_27:	spriteHeader
+Map_objCF_27:	spriteHeader
  spritePiece 4, -$19, 1, 2, $1F, 0, 0, 0, 0
  spritePiece -$18, -$C, 2, 2, $4AA, 0, 0, 0, 0
  spritePiece -8, -$C, 2, 2, $4AE, 0, 0, 0, 0
  spritePiece -8, 4, 2, 1, $4B2, 0, 0, 0, 0
  spritePiece 8, -$C, 2, 3, $4B4, 0, 0, 0, 0
-Map_9591_27_End
+Map_objCF_27_End
 
-Map_9591_28:	spriteHeader
+Map_objCF_28:	spriteHeader
  spritePiece -$14, -$C, 4, 3, $4BA, 0, 0, 0, 0
  spritePiece $C, -$C, 1, 3, $4C6, 0, 0, 0, 0
  spritePiece -6, -$15, 2, 2, $21, 0, 0, 0, 0
-Map_9591_28_End
+Map_objCF_28_End
 
-Map_9591_29:	spriteHeader
+Map_objCF_29:	spriteHeader
  spritePiece -$14, -$C, 4, 3, $4C9, 0, 0, 0, 0
  spritePiece $C, -$C, 1, 1, $4D5, 0, 0, 0, 0
  spritePiece -6, -$15, 2, 2, $25, 0, 0, 0, 0
-Map_9591_29_End
+Map_objCF_29_End
 
-Map_9591_30:	spriteHeader
+Map_objCF_30:	spriteHeader
  spritePiece -$14, -4, 2, 2, $4D6, 0, 0, 0, 0
  spritePiece -4, -$C, 3, 2, $4DA, 0, 0, 0, 0
  spritePiece -4, 4, 2, 1, $4E0, 0, 0, 0, 0
  spritePiece -7, -$F, 2, 2, $29, 0, 0, 0, 0
-Map_9591_30_End
+Map_objCF_30_End
 
-Map_9591_31:	spriteHeader
+Map_objCF_31:	spriteHeader
  spritePiece 0, 4, 4, 4, $2D, 0, 0, 0, 0
  spritePiece 8, $24, 2, 1, $3D, 0, 0, 0, 0
-Map_9591_31_End
+Map_objCF_31_End
 
-Map_9591_32:	spriteHeader
+Map_objCF_32:	spriteHeader
  spritePiece 0, 4, 4, 4, $3F, 0, 0, 0, 0
  spritePiece $10, $24, 2, 1, $4F, 0, 0, 0, 0
-Map_9591_32_End
+Map_objCF_32_End
 
-Map_9591_33:	spriteHeader
+Map_objCF_33:	spriteHeader
  spritePiece $28, 0, 4, 4, $51, 0, 0, 0, 0
  spritePiece 8, $10, 4, 4, $65, 0, 0, 0, 0
  spritePiece $20, 0, 1, 2, $63, 0, 0, 0, 0
@@ -307,6 +307,6 @@ Map_9591_33:	spriteHeader
  spritePiece $18, $50, 2, 3, $99, 0, 0, 0, 0
  spritePiece $30, $48, 2, 2, $95, 0, 0, 0, 0
  spritePiece $28, $48, 1, 2, $93, 0, 0, 0, 0
-Map_9591_33_End
+Map_objCF_33_End
 
 	even
