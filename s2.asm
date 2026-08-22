@@ -49,7 +49,7 @@ relativeLea = 0|(gameRevision<2)|allOptimizations
 useFullWaterTables = 0
 ;	| If 1, zone offset tables for water levels cover all level slots instead of only slots 8-$F
 ;	| Set to 1 if you've shifted level IDs around or you want water in levels with a level slot below 8
-debugbuild = 1
+debugbuild = 0
 ;	| If 1, level select and debug instantly enabled on the title screen
 yourpast = 1
 ;	| If 1,shield is disabled and clone sonic will appear
@@ -6852,12 +6852,14 @@ SpecialStage:
 	lea	(ArtNem_SpecialStageResults).l,a0
 	bsr.w	NemDec
 	move.w	(Player_mode).w,d0
+	beq.s	++	;sonic and tails
+	cmpi.w	#3,d0	;knuckles and tails
 	beq.s	++
-	cmpi.w	#3,d0
-	beq.s	++
-	cmpi.w	#2,d0
+	subq.w	#1,d0
+	beq.s	+	;sonic alone
+	cmpi.w	#3,d0	;knuckles alone
 	beq.s	+
-	clr.w	(Ring_count).w
+	clr.w	(Ring_count).w	;if it gets here, tails alone
 	bra.s	++
 ; ===========================================================================
 +
@@ -10322,12 +10324,20 @@ SSStartNewAct:
 ; Misc_7756:
 SpecialStage_RingReq_Team:
 	dc.b  40, 80,140,120	; 4
-	dc.b  50,100,140,150	; 8
-	dc.b  60,110,160,170	; 12
-	dc.b  40,100,150,160	; 16
-	dc.b  55,110,200,200	; 20
-	dc.b  80,140,220,220	; 24
-	dc.b 100,190,210,210	; 28
+	dc.b  50, 90,130,140	; 8
+	dc.b  60,100,140,170	; 12
+	dc.b  40,100,130,160	; 16
+	dc.b  45,100,170,170	; 20
+	dc.b  70,130,180,180	; 24
+	dc.b  50,140,160,160	; 28
+	;old team ring requirements
+;	dc.b  40, 80,140,120	; 4
+;	dc.b  50,100,140,150	; 8
+;	dc.b  60,110,160,170	; 12
+;	dc.b  40,100,150,160	; 16
+;	dc.b  55,110,200,200	; 20
+;	dc.b  80,140,220,220	; 24
+;	dc.b 100,190,210,210	; 28
 	even
 ; ----------------------------------------------------------------------------
 ; Ring requirement values for Sonic or Tails alone games
@@ -10338,13 +10348,22 @@ SpecialStage_RingReq_Team:
 ; ----------------------------------------------------------------------------
 ; Misc_7772:
 SpecialStage_RingReq_Alone:
+	;smaller ring requirements like KiS2
 	dc.b  30, 70,130,110	; 4
-	dc.b  50,100,140,140	; 8
-	dc.b  50,110,160,160	; 12
-	dc.b  40,110,150,150	; 16
-	dc.b  50, 90,160,160	; 20
-	dc.b  80,140,210,210	; 24
-	dc.b 100,150,190,190	; 28
+	dc.b  50, 90,130,130	; 8
+	dc.b  50,100,140,160	; 12
+	dc.b  40, 90,140,150	; 16
+	dc.b  40, 80,130,130	; 20
+	dc.b  70,130,170,170	; 24
+	dc.b  50,100,140,140	; 28
+	;old alone ring requirements
+;	dc.b  30, 70,130,110	; 4
+;	dc.b  50,100,140,140	; 8
+;	dc.b  50,110,160,160	; 12
+;	dc.b  40,110,150,150	; 16
+;	dc.b  50, 90,160,160	; 20
+;	dc.b  80,140,210,210	; 24
+;	dc.b 100,150,190,190	; 28
 	even
 
 ; special stage palette table
@@ -12656,8 +12675,8 @@ LevelSelect_PressStart:
     else
 	move.w	#emerald_hill_zone_act_1,(Current_ZoneAndAct).w
     endif
-	move.b	#3,(Life_count).w
-	move.b	#3,(Life_count_2P).w
+	move.b	#20,(Life_count).w	;change from 3 lives
+	move.b	#20,(Life_count_2P).w
 	moveq	#0,d0
 	move.w	d0,(Ring_count).w
 	move.l	d0,(Timer).w
@@ -28335,8 +28354,12 @@ Obj6F_Emerald0:
 ; ===========================================================================
 ;loc_144DC
 Obj6F_P2Rings:
-	tst.w	(Player_mode).w
-	bne.w	DeleteObject
+	tst.w	(Player_mode).w	;sonic and tails mode?
+	beq.s	.dontdeleteobj	;if yes, keep object
+	cmpi.w	#3,(Player_mode).w	;knuckles and tails mode
+	beq.s	.dontdeleteobj		;if yes, keep object
+	bra.w	DeleteObject		;otherwise delete
+.dontdeleteobj:
 	cmpi.b	#$26,(SpecialStageResults+routine).w	; Do we need space for perfect countdown?
 	beq.w	DeleteObject							; Branch if yes
 	moveq	#$E,d0		; "Miles rings"
@@ -28361,10 +28384,14 @@ Obj6F_P1Rings:
 	bra.w	Obj6F_PerfectBonus
 ; ===========================================================================
 +
-	move.w	(Player_mode).w,d0
-	beq.s	++
+	move.w	(Player_mode).w,d0	
+	beq.s	++		;is sonic and tails
+	cmpi.w	#3,d0
+	beq.s	++		;is knux and tails
 	move.w	#spriteScreenPositionYCentered(48),y_pixel(a0)
 	subq.w	#1,d0
+	beq.s	++
+	cmpi.w	#3,d0	;since subtracted 1, knux alone 4-1=3
 	beq.s	++
 	moveq	#$E,d0		; "Miles rings"
 	btst	#7,(Graphics_Flags).w
@@ -36158,7 +36185,7 @@ Obj01_Index:	offsetTable
 ; loc_19F76: Obj_01_Sub_0: Obj01_Main:
 Obj01_Init:
 	move.b	#0,(Player1_character_id).w		;0 for sonic, 1 for tails, 2 for knuckles
-	cmpi.b	#ObjID_Knuckles,id(a0)			;is thsi knuckles?
+	cmpi.b	#ObjID_Knuckles,id(a0)			;is this knuckles?
 	beq.s	.knuxpicked				;if yes load his assets 
 	bra.s	.charpicked				;otherwise sonic
 .knuxpicked:
@@ -36228,7 +36255,10 @@ Obj01_Control:
 	move.w	(Ctrl_1).w,(Ctrl_1_Logical).w	; copy new held buttons, to enable joypad control
 +
 	btst	#0,obj_control(a0)	; is Sonic interacting with another object that holds him in place or controls his movement somehow?
-	bne.s	+			; if yes, branch to skip Sonic's control
+	beq.s	+
+	move.b	#0,double_jump_flag(a0)
+	bra.s	++			; if yes, branch to skip Sonic's control
++		
 	moveq	#0,d0
 	move.b	status(a0),d0
 	andi.w	#1<<status.player.in_air|1<<status.player.rolling,d0	; %0000 %0110
@@ -36595,7 +36625,7 @@ Obj01_NotRight:
 	add.w	x_pos(a0),d1
 	sub.w	x_pos(a1),d1
 	cmpi.b	#2,(Player1_character_id).w	;is knuckles?
-	beq.w	SuperSonic_Balance			;if yes, skip get up stuff
+	beq.w	SuperSonic_Balance			;if yes, use simpler balancing code
 	tst.b	(Super_Sonic_flag).w
 	bne.w	SuperSonic_Balance
 	cmpi.w	#2,d1
@@ -36657,7 +36687,7 @@ Sonic_Balance:
 	cmpi.w	#$C,d1
 	blt.w	Sonic_Lookup
 	cmpi.b	#2,(Player1_character_id).w	;is knuckles?
-	beq.w	SuperSonic_Balance2			;if yes, skip get up stuff
+	beq.w	SuperSonic_Balance2			;if yes, use simpler balancing code
 	tst.b	(Super_Sonic_flag).w
 	bne.w	SuperSonic_Balance2
 	cmpi.b	#3,next_tilt(a0)
@@ -37372,7 +37402,7 @@ Sonic_Jump:
 	cmpi.w	#6,d1			; does Sonic have enough room to jump?
 	blt.w	return_1AAE6		; if not, branch
 	cmpi.b	#2,(Player1_character_id).w	;is knuckles?
-	beq.w	.knux			;if yes, skip get up stuff
+	beq.w	.knux			;if yes, smaller jump height
 	move.w	#$680,d2
 	tst.b	(Super_Sonic_flag).w
 	beq.s	.nosuper
@@ -38374,7 +38404,7 @@ Obj01_Respawning:
 Sonic_Animate:
 	cmpi.b	#2,(Player1_character_id).w	;knuckles?
 	bne.s	.notknux
-	jmp	Knuckles_Animate
+	jmp	Knuckles_Animate		;if yes, use different animation code
 .notknux:
 	lea	(SonicAniData).l,a1
 	tst.b	(Super_Sonic_flag).w
@@ -39049,8 +39079,12 @@ Obj02_Control_Joypad2:
 	bsr.w	TailsCPU_Control
 ; loc_1B9EA:
 Obj02_Control_Part2:
-	btst	#0,obj_control(a0)	; is Tails flying, or interacting with another object that holds him in place or controls his movement somehow?
-	bne.s	+			; if yes, branch to skip Tails' control
+	btst	#0,obj_control(a0)	; is Tails flying (CPU), or interacting with another object that holds him in place or controls his movement somehow?
+	beq.s	+
+	move.b	#0,double_jump_flag(a0)
+	clr.b	(Tails_carrying_Sonic).w
+	bra.s	++			; if yes, branch to skip Tails' control
++	
 	moveq	#0,d0
 	move.b	status(a0),d0
 	andi.w	#1<<status.player.in_air|1<<status.player.rolling,d0	; %0000 %0110
@@ -92998,7 +93032,7 @@ KAnim_Push:
 	bpl.s	+
 	moveq	#0,d2
 +
-	lsr.w	#6,d2
+	lsr.w	#8,d2	;kis2 faster push animation
 	move.b	d2,anim_frame_duration(a0)
 	lea	(KnucklesAni_Push).l,a1
 	move.b	status(a0),d1
