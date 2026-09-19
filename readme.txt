@@ -1,6 +1,6 @@
 Sonic 2 but your past haunts you
 
-Hack inspired by Selbi with (Sonic 1 but your past haunts you)[https://www.youtube.com/watch?v=gKSEUuwBcvY]
+Hack inspired by Selbi with [Sonic 1 but your past haunts you](https://www.youtube.com/watch?v=gKSEUuwBcvY)
 
 I wanted to do the same thing but with Sonic 2
 
