@@ -1,5 +1,7 @@
 Sonic 2 but your past haunts you
 
+CREDITS, some guides and other sonic disassembly included in: "guides used sonic 2 your past.txt"
+
 Hack inspired by Selbi with [Sonic 1 but your past haunts you](https://www.youtube.com/watch?v=gKSEUuwBcvY)
 
 I wanted to do the same thing but with Sonic 2
