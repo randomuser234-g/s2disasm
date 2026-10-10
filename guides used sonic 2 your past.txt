@@ -1,0 +1,9 @@
+-fly and swim with tails in s2: painto (sonic retro)
+https://info.sonicretro.org/SCHG_How-to:Add_Tails%27_flying_and_swimming_to_Sonic_2
+
+port knuckles into s2: mainmemory, painto (sonic retro)
+https://info.sonicretro.org/SCHG_How-to:Port_Knuckles_into_Sonic_2
+
+kis2, s3k and s3 prototype (tails and knux code, code for trail effect so clone works)
+https://github.com/sonicretro/skdisasm
+https://github.com/NyperYuhgard/Sonic-3-Beta-Dissembly
