@@ -55,6 +55,8 @@ level design not designed around extra abilities, could go out of bounds
 
 special stage results doesn't have unique behavior for knuckles
 
+No Super Knuckles palette or other visual indicators aside from trailing stars
+
 can't compile for REV2 due to errors
 
 original description:
