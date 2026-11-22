@@ -49,9 +49,9 @@ relativeLea = 0|(gameRevision<2)|allOptimizations
 useFullWaterTables = 0
 ;	| If 1, zone offset tables for water levels cover all level slots instead of only slots 8-$F
 ;	| Set to 1 if you've shifted level IDs around or you want water in levels with a level slot below 8
-debugbuild = 0
+debugbuild = 1
 ;	| If 1, level select and debug instantly enabled on the title screen
-yourpast = 1
+yourpast = 0
 ;	| If 1,shield is disabled and clone sonic will appear
 
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -13670,6 +13670,10 @@ loc_A30A:
 +
 	lea	(MainCharacter).w,a1 ; a1=character
 	move.b	#AniIDSonAni_Float2,anim(a1)
+	cmpi.b	#ObjID_Tails,id(a1) ; is the player Tails?
+	bne.s	+			;if not, branch
+	move.b	#AniIDTailsAni_Tired,anim(a1)	;tired animation
++
 	move.w	#$A0,x_pos(a1)
 	move.w	#$50,y_pos(a1)
 	cmpi.w	#2,(Ending_Routine).w
